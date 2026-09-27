@@ -358,7 +358,7 @@ td.num{font-family:var(--font-mono); text-align:right;}
         <div class="toolbar">
           <input type="search" id="motorSearch" placeholder="Search anything — tag, name, department, location…">
           <select id="motorDeptFilter"><option value="">All departments</option></select>
-          <select id="motorLocTypeFilter"><option value="">All locations</option><option>Mill floor</option><option>Internal workshop</option><option>External workshop</option><option>Container</option><option>Store</option><option>Vendor</option><option>Other</option></select>
+          <select id="motorLocTypeFilter"><option value="">All locations</option><option>Mill B</option><option>Mill C</option><option>Mill D</option><option>Mill E</option><option>Mill F</option><option>Water Treatment</option><option>Arox Warehouse</option><option>Bran Packing</option><option>Flour Packing</option><option>Internal workshop</option><option>External workshop</option><option>Container</option><option>Store</option><option>Vendor</option><option>Other</option></select>
           <input type="number" id="motorKwFilter" placeholder="kW" style="width:80px;" step="0.1">
           <input type="number" id="motorRpmFilter" placeholder="RPM" style="width:85px;">
           <input type="number" id="motorVoltFilter" placeholder="Voltage" style="width:90px;">
@@ -888,7 +888,7 @@ function renderDashboard(){
 
   const kpis = [
     {label:'Motors down right now', value: breakdownNow.length + outForRepair.length, cls: (breakdownNow.length+outForRepair.length)>0?'crit':'good', delta: motors.length+' motors total'},
-    {label:'Spare motors ready in store', value: spareMotorsReady.length, cls: spareMotorsReady.length>0?'good':'warn', delta: spareMotorsReady.length? spareMotorsReady.map(m=>m.tag).join(', ') : 'none on standby — nothing to swap in'},
+    {label:'Spare motors ready', value: spareMotorsReady.length, cls: spareMotorsReady.length>0?'good':'warn', delta: spareMotorsReady.length+' motors total'},
     {label:'Open breakdown tickets', value: openEvents.length, cls: openEvents.length>0?'warn':'good', delta: openEvents.filter(e=>e.urgency==='high').length+' marked high urgency'},
     {label:'Low stock spares', value: lowStock.length, cls: lowStock.length>0?'crit':'good', delta: spares.length+' part lines tracked'},
     {label:'Hours lost — open issues', value: Math.round(totalDowntimeOpen), cls:'info', delta:'running total, all open tickets'},
@@ -1431,8 +1431,8 @@ document.getElementById('modalOverlay').addEventListener('click', e=>{ if(e.targ
 
 function openMotorModal(id){
   const m = id ? motorById(id) : null;
-  const depts = ['Cleaning','Milling','Sifting','Conveying','Packing','Utilities'];
-  const locTypes = ['Mill floor','Internal workshop','External workshop','Container','Store','Vendor','Other'];
+  const depts = ['Cleaning','Milling','Sifting','Conveying','Packing','Utilities','Other'];
+  const locTypes = ['Mill B','Mill C','Mill D','Mill E','Mill F','Bran Packing','Flour Packing','Utilities','Internal workshop','External workshop','Container','Store','Vendor','Other'];
   openModal(
     '<div class="modal-head"><h3>'+(m?'Edit motor':'Add motor')+'</h3><button class="modal-close" id="mClose">×</button></div>'+
     '<div class="modal-body">'+
