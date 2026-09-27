@@ -1,0 +1,5 @@
+node_modules/
+.env
+db/motortrack.sqlite
+db/motortrack.sqlite-shm
+db/motortrack.sqlite-wal

@@ -1,0 +1,2090 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Motor &amp; Spares Control — Flour Mill Maintenance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#15171B; --surface:#1C1F24; --surface-2:#252932; --surface-3:#2E333D;
+  --line:#363C46; --line-soft:#2A2F38;
+  --text:#ECE8DE; --text-dim:#9BA1AA; --text-faint:#666C76;
+  --wheat:#D9BE7E; --wheat-dim:#8E7A50;
+  --steel:#7FA1C4; --amber:#E0A23D; --rust:#C15A41; --moss:#7C9C6E;
+  --amber-bg:rgba(224,162,61,0.14); --rust-bg:rgba(193,90,65,0.14); --moss-bg:rgba(124,156,110,0.14); --steel-bg:rgba(127,161,196,0.14);
+  --shadow: 0 8px 24px rgba(0,0,0,0.35);
+  --radius: 3px;
+  --font-head:'Barlow Condensed',sans-serif;
+  --font-body:'IBM Plex Sans',sans-serif;
+  --font-mono:'IBM Plex Mono',monospace;
+}
+:root:not([data-theme="light"]){}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#F2EEE3; --surface:#FFFFFF; --surface-2:#EDE7D6; --surface-3:#E4DCC5;
+    --line:#DBD2B8; --line-soft:#E6DFC9;
+    --text:#221F18; --text-dim:#635C4C; --text-faint:#9A9280;
+    --wheat:#95742E; --wheat-dim:#B99B54;
+    --steel:#3D6690; --amber:#95651A; --rust:#9B3E28; --moss:#4B6B3E;
+    --amber-bg:rgba(149,101,26,0.10); --rust-bg:rgba(155,62,40,0.10); --moss-bg:rgba(75,107,62,0.10); --steel-bg:rgba(61,102,144,0.10);
+    --shadow: 0 8px 24px rgba(60,50,20,0.10);
+  }
+}
+:root[data-theme="light"]{
+  --bg:#F2EEE3; --surface:#FFFFFF; --surface-2:#EDE7D6; --surface-3:#E4DCC5;
+  --line:#DBD2B8; --line-soft:#E6DFC9;
+  --text:#221F18; --text-dim:#635C4C; --text-faint:#9A9280;
+  --wheat:#95742E; --wheat-dim:#B99B54;
+  --steel:#3D6690; --amber:#95651A; --rust:#9B3E28; --moss:#4B6B3E;
+  --amber-bg:rgba(149,101,26,0.10); --rust-bg:rgba(155,62,40,0.10); --moss-bg:rgba(75,107,62,0.10); --steel-bg:rgba(61,102,144,0.10);
+  --shadow: 0 8px 24px rgba(60,50,20,0.10);
+}
+:root[data-theme="dark"]{
+  --bg:#15171B; --surface:#1C1F24; --surface-2:#252932; --surface-3:#2E333D;
+  --line:#363C46; --line-soft:#2A2F38;
+  --text:#ECE8DE; --text-dim:#9BA1AA; --text-faint:#666C76;
+  --wheat:#D9BE7E; --wheat-dim:#8E7A50;
+  --steel:#7FA1C4; --amber:#E0A23D; --rust:#C15A41; --moss:#7C9C6E;
+  --amber-bg:rgba(224,162,61,0.14); --rust-bg:rgba(193,90,65,0.14); --moss-bg:rgba(124,156,110,0.14); --steel-bg:rgba(127,161,196,0.14);
+  --shadow: 0 8px 24px rgba(0,0,0,0.35);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg); color:var(--text); font-family:var(--font-body);
+  min-height:100vh; font-size:14px; line-height:1.5;
+}
+::selection{background:var(--wheat); color:#1A1810;}
+a{color:var(--steel);}
+button{font-family:var(--font-body);}
+input,select,textarea{font-family:var(--font-body); color:var(--text); background:var(--surface-2); border:1px solid var(--line); border-radius:var(--radius); padding:8px 10px; font-size:13.5px;}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--steel); outline-offset:1px;}
+label{display:block; font-size:12px; color:var(--text-dim); margin-bottom:4px; font-weight:500;}
+.field{margin-bottom:12px;}
+.mono{font-family:var(--font-mono);}
+
+/* ---------- Layout ---------- */
+#app{display:flex; min-height:100vh;}
+.sidebar{
+  width:210px; flex-shrink:0; background:var(--surface); border-right:1px solid var(--line);
+  display:flex; flex-direction:column; position:sticky; top:0; height:100vh;
+}
+.brand{padding:20px 18px 14px; border-bottom:1px solid var(--line-soft);}
+.brand .mark{font-family:var(--font-head); font-weight:700; font-size:22px; letter-spacing:0.2px; color:var(--wheat); line-height:1;}
+.brand .sub{font-size:11px; color:var(--text-faint); margin-top:4px;}
+.nav{flex:1; padding:14px 10px; display:flex; flex-direction:column; gap:2px;}
+.nav-item{
+  display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:var(--radius);
+  color:var(--text-dim); text-decoration:none; cursor:pointer; font-size:13.5px; font-weight:500;
+  border:1px solid transparent; background:none; text-align:left; width:100%;
+}
+.nav-item svg{width:16px; height:16px; flex-shrink:0;}
+.nav-item:hover{background:var(--surface-2); color:var(--text);}
+.nav-item.active{background:var(--surface-2); color:var(--wheat); border-color:var(--line);}
+.nav-item .count{margin-left:auto; font-family:var(--font-mono); font-size:11px; color:var(--text-faint); background:var(--surface-3); padding:1px 6px; border-radius:10px;}
+.nav-item.active .count{color:var(--wheat);}
+.nav-item .count.alert{color:var(--rust); background:var(--rust-bg);}
+.sidebar-foot{padding:12px 14px; border-top:1px solid var(--line-soft); font-size:11px; color:var(--text-faint);}
+.theme-toggle{display:flex; gap:4px; margin-top:8px;}
+.theme-toggle button{flex:1; padding:5px; font-size:11px; background:var(--surface-2); border:1px solid var(--line); color:var(--text-dim); cursor:pointer; border-radius:var(--radius);}
+.theme-toggle button.active{color:var(--wheat); border-color:var(--wheat-dim);}
+
+.main{flex:1; min-width:0; display:flex; flex-direction:column;}
+.topbar{
+  display:flex; align-items:center; justify-content:space-between; padding:14px 26px;
+  border-bottom:1px solid var(--line); background:var(--surface); position:sticky; top:0; z-index:5;
+  gap:16px; flex-wrap:wrap;
+}
+.topbar h1{font-family:var(--font-head); font-weight:600; font-size:22px; margin:0; letter-spacing:0.2px;}
+.topbar .clock{font-family:var(--font-mono); font-size:12px; color:var(--text-dim);}
+.sync-pill{display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--text-faint); font-family:var(--font-mono);}
+.dot{width:7px; height:7px; border-radius:50%; background:var(--moss); flex-shrink:0;}
+.dot.offline{background:var(--rust);}
+.content{padding:22px 26px 60px; flex:1;}
+.view{display:none;}
+.view.active{display:block;}
+
+/* ---------- Common bits ---------- */
+.page-head{display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:18px; gap:12px; flex-wrap:wrap;}
+.page-head h2{font-family:var(--font-head); font-size:26px; font-weight:600; margin:0 0 2px;}
+.page-head p{margin:0; color:var(--text-dim); font-size:13px;}
+.btn{
+  display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:var(--radius);
+  border:1px solid var(--line); background:var(--surface-2); color:var(--text); cursor:pointer;
+  font-size:13px; font-weight:500;
+}
+.btn:hover{border-color:var(--wheat-dim);}
+.btn-primary{background:var(--wheat); color:#1A1810; border-color:var(--wheat);}
+.btn-primary:hover{filter:brightness(1.06);}
+.btn-danger{color:var(--rust); border-color:var(--rust);}
+.btn-ghost{background:none; border-color:transparent;}
+.btn-sm{padding:5px 10px; font-size:12px;}
+.btn:disabled{opacity:0.5; cursor:not-allowed;}
+
+.kpi-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px; margin-bottom:22px;}
+.kpi{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:16px 16px 14px; position:relative; overflow:hidden;}
+.kpi::before{content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--bar,var(--wheat-dim));}
+.kpi .label{font-size:11.5px; color:var(--text-dim); text-transform:none; font-weight:500;}
+.kpi .value{font-family:var(--font-mono); font-size:30px; font-weight:600; margin-top:6px; line-height:1;}
+.kpi .delta{font-size:11.5px; color:var(--text-faint); margin-top:6px;}
+.kpi.warn{--bar:var(--amber);} .kpi.crit{--bar:var(--rust);} .kpi.good{--bar:var(--moss);} .kpi.info{--bar:var(--steel);}
+
+.panel{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); margin-bottom:18px;}
+.panel-head{display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid var(--line-soft);}
+.panel-head h3{font-family:var(--font-head); font-size:17px; font-weight:600; margin:0;}
+.panel-head .meta{font-size:11.5px; color:var(--text-faint);}
+.panel-body{padding:4px 0;}
+.panel-body.pad{padding:16px;}
+
+.dash-grid{display:grid; grid-template-columns:1.4fr 1fr; gap:18px;}
+@media (max-width:980px){.dash-grid{grid-template-columns:1fr;}}
+
+.row-list{display:flex; flex-direction:column;}
+.row-item{display:flex; align-items:center; gap:12px; padding:11px 16px; border-bottom:1px solid var(--line-soft); font-size:13px;}
+.row-item:last-child{border-bottom:none;}
+.row-item .tag{font-family:var(--font-mono); font-weight:600; color:var(--wheat); min-width:56px;}
+.row-item .main-txt{flex:1; min-width:0;}
+.row-item .main-txt .t1{font-weight:500;}
+.row-item .main-txt .t2{color:var(--text-faint); font-size:11.5px; margin-top:1px;}
+.row-item .side{text-align:right; font-size:11.5px; color:var(--text-dim); white-space:nowrap;}
+.empty-note{padding:26px 16px; text-align:center; color:var(--text-faint); font-size:13px;}
+
+.badge{display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap;}
+.badge.running{background:var(--moss-bg); color:var(--moss);}
+.badge.standby{background:var(--steel-bg); color:var(--steel);}
+.badge.breakdown{background:var(--rust-bg); color:var(--rust);}
+.badge.repair{background:var(--amber-bg); color:var(--amber);}
+.badge.decommissioned{background:var(--surface-3); color:var(--text-faint);}
+.badge.low{background:var(--rust-bg); color:var(--rust);}
+.badge.ok{background:var(--moss-bg); color:var(--moss);}
+.badge.urg-high{background:var(--rust-bg); color:var(--rust);}
+.badge.urg-medium{background:var(--amber-bg); color:var(--amber);}
+.badge.urg-low{background:var(--steel-bg); color:var(--steel);}
+.badge::before{content:""; width:5px; height:5px; border-radius:50%; background:currentColor;}
+
+/* Table */
+.table-wrap{overflow-x:auto;}
+table{width:100%; border-collapse:collapse; font-size:13px;}
+thead th{text-align:left; font-size:11px; color:var(--text-faint); font-weight:600; padding:9px 16px; border-bottom:1px solid var(--line); white-space:nowrap;}
+tbody td{padding:11px 16px; border-bottom:1px solid var(--line-soft); vertical-align:middle;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr{cursor:pointer;}
+tbody tr:hover{background:var(--surface-2);}
+td.num{font-family:var(--font-mono); text-align:right;}
+.cell-title{font-weight:500;}
+.cell-sub{color:var(--text-faint); font-size:11.5px; margin-top:2px;}
+
+.toolbar{display:flex; gap:10px; align-items:center; margin-bottom:14px; flex-wrap:wrap;}
+.toolbar input[type=search]{flex:1; min-width:180px;}
+.toolbar select{min-width:140px;}
+.chip-filters{display:flex; gap:6px; flex-wrap:wrap;}
+.chip{padding:5px 11px; border-radius:20px; border:1px solid var(--line); background:var(--surface-2); font-size:12px; color:var(--text-dim); cursor:pointer;}
+.chip.active{border-color:var(--wheat-dim); color:var(--wheat); background:var(--amber-bg);}
+
+/* Modal & drawer */
+.overlay{position:fixed; inset:0; background:rgba(10,10,8,0.55); display:none; align-items:center; justify-content:center; z-index:50; padding:20px;}
+.overlay.open{display:flex;}
+.modal{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); width:100%; max-width:520px; max-height:88vh; overflow-y:auto; box-shadow:var(--shadow);}
+.modal.wide{max-width:680px;}
+.modal-head{display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--line-soft); position:sticky; top:0; background:var(--surface);}
+.modal-head h3{font-family:var(--font-head); font-size:19px; margin:0; font-weight:600;}
+.modal-close{background:none; border:none; color:var(--text-faint); font-size:20px; cursor:pointer; line-height:1; padding:4px;}
+.modal-body{padding:18px 20px;}
+.modal-foot{padding:14px 20px; border-top:1px solid var(--line-soft); display:flex; justify-content:flex-end; gap:8px; position:sticky; bottom:0; background:var(--surface);}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+.grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;}
+@media (max-width:520px){.grid2,.grid3{grid-template-columns:1fr;}}
+
+.drawer-overlay{position:fixed; inset:0; background:rgba(10,10,8,0.45); display:none; z-index:40;}
+.drawer-overlay.open{display:block;}
+.drawer{position:fixed; top:0; right:0; bottom:0; width:min(460px,100%); background:var(--surface); border-left:1px solid var(--line); z-index:41; transform:translateX(100%); transition:transform .22s ease; overflow-y:auto; box-shadow:var(--shadow);}
+.drawer.open{transform:translateX(0);}
+.drawer-head{padding:18px 20px; border-bottom:1px solid var(--line-soft); position:sticky; top:0; background:var(--surface); z-index:2;}
+.drawer-head .kicker{font-size:11px; color:var(--text-faint); font-family:var(--font-mono); text-transform:uppercase; letter-spacing:0.06em;}
+.drawer-head h3{font-family:var(--font-head); font-size:24px; margin:4px 0 6px; font-weight:600;}
+.drawer-close{position:absolute; top:16px; right:16px; background:none; border:none; color:var(--text-faint); font-size:20px; cursor:pointer;}
+.drawer-body{padding:18px 20px;}
+.drawer-section{margin-bottom:20px;}
+.drawer-section h4{font-size:12px; text-transform:none; color:var(--text-faint); margin:0 0 10px; font-weight:600; letter-spacing:0.02em;}
+.kv{display:grid; grid-template-columns:1fr 1fr; gap:10px 14px; font-size:13px;}
+.kv div span{display:block;}
+.kv .k{color:var(--text-faint); font-size:11.5px;}
+.kv .v{font-weight:500; margin-top:2px;}
+.timeline{display:flex; flex-direction:column; gap:0;}
+.tl-item{display:flex; gap:10px; padding:10px 0; border-bottom:1px solid var(--line-soft); font-size:12.5px;}
+.tl-item:last-child{border-bottom:none;}
+.tl-dot{width:8px; height:8px; border-radius:50%; background:var(--wheat-dim); margin-top:4px; flex-shrink:0;}
+.tl-item .tl-time{color:var(--text-faint); font-family:var(--font-mono); font-size:11px;}
+
+.callout{border:1px solid var(--rust); background:var(--rust-bg); color:var(--rust); border-radius:var(--radius); padding:10px 14px; font-size:12.5px; margin-bottom:16px; display:flex; gap:10px; align-items:flex-start;}
+.callout.amber{border-color:var(--amber); background:var(--amber-bg); color:var(--amber);}
+.callout b{color:inherit;}
+
+.bar-chart{display:flex; align-items:flex-end; gap:8px; height:140px; padding:10px 4px 0;}
+.bar-chart .col{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; gap:6px;}
+.bar-chart .bar{width:100%; max-width:34px; background:var(--steel); border-radius:2px 2px 0 0; min-height:2px;}
+.bar-chart .col .lbl{font-size:10.5px; color:var(--text-faint); font-family:var(--font-mono);}
+.bar-chart .col .val{font-size:10.5px; color:var(--text-dim); font-family:var(--font-mono);}
+
+.hbar-row{display:flex; align-items:center; gap:10px; padding:8px 16px; font-size:12.5px;}
+.hbar-row .hname{width:130px; flex-shrink:0; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.hbar-track{flex:1; background:var(--surface-3); border-radius:3px; height:8px; overflow:hidden;}
+.hbar-fill{height:100%; background:var(--amber); border-radius:3px;}
+.hbar-n{width:26px; text-align:right; font-family:var(--font-mono); color:var(--text-faint); flex-shrink:0;}
+
+.stage-track{display:flex; gap:4px; margin:4px 0 18px;}
+.stage-step{flex:1; text-align:center; padding:7px 4px; font-size:10.5px; border-radius:var(--radius); background:var(--surface-3); color:var(--text-faint); font-weight:600;}
+.stage-step.done{background:var(--moss-bg); color:var(--moss);}
+.stage-step.now{background:var(--amber-bg); color:var(--amber);}
+
+.footer-note{color:var(--text-faint); font-size:11.5px; margin-top:30px; padding-top:16px; border-top:1px solid var(--line-soft);}
+::-webkit-scrollbar{width:10px; height:10px;}
+::-webkit-scrollbar-thumb{background:var(--surface-3); border-radius:6px;}
+::-webkit-scrollbar-track{background:transparent;}
+.spare-line{display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--line-soft);}
+.spare-line:last-child{border-bottom:none;}
+.spare-line select{flex:1;}
+.spare-line input{width:64px;}
+.icon-btn{background:none; border:none; color:var(--text-faint); cursor:pointer; padding:4px; font-size:15px; line-height:1;}
+.icon-btn:hover{color:var(--rust);}
+@media (max-width:860px){
+  .sidebar{position:fixed; left:0; z-index:30; transition:transform .2s; transform:translateX(-100%);}
+  .sidebar.open{transform:translateX(0);}
+  .menu-btn{display:flex !important;}
+  .content{padding:16px;}
+  .topbar{padding:12px 16px;}
+}
+.menu-btn{display:none; background:none; border:1px solid var(--line); border-radius:var(--radius); width:34px; height:34px; align-items:center; justify-content:center; color:var(--text); cursor:pointer;}
+@media print{
+  .sidebar, .topbar, .toolbar, .page-head button, .menu-btn, #printReportBtn, .btn, [data-edit-motor], .row-item[data-open-motor]::after{ display:none !important; }
+  body, #app{ background:#fff !important; color:#000 !important; }
+  .content{ padding:0 !important; }
+  .panel{ border:1px solid #ccc !important; break-inside:avoid; margin-bottom:14px !important; }
+  .view{ display:block !important; }
+  .view:not(#view-reports){ display:none !important; }
+  a[href]:after{ content:""; }
+}
+</style>
+</head>
+<body>
+
+<div id="bootLoading" style="min-height:100vh; display:flex; align-items:center; justify-content:center;">
+  <div style="color:var(--text-faint); font-family:var(--font-mono); font-size:13px;">Loading MotorTrack…</div>
+</div>
+
+<div id="loginScreen" style="min-height:100vh; display:none; align-items:center; justify-content:center; padding:20px;">
+  <div style="width:100%; max-width:360px; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:28px 26px; box-shadow:var(--shadow);">
+    <div style="font-family:var(--font-head); font-weight:700; font-size:26px; color:var(--wheat); margin-bottom:2px;">⚙ MOTORTRACK</div>
+    <div style="color:var(--text-dim); font-size:12.5px; margin-bottom:22px;">Sign in to the maintenance system.</div>
+    <div class="field"><label>Username</label><input id="li-user" autocomplete="username"></div>
+    <div class="field"><label>Password</label><input id="li-pass" type="password" autocomplete="current-password"></div>
+    <div id="li-error" style="color:var(--rust); font-size:12.5px; margin-bottom:10px; display:none;"></div>
+    <button class="btn btn-primary" id="li-submit" style="width:100%; justify-content:center;">Sign in</button>
+    <div style="color:var(--text-faint); font-size:11px; margin-top:16px;">Ask your admin for an account if you don't have one yet.</div>
+  </div>
+</div>
+
+<div id="app" style="display:none;">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="mark">⚙ MOTORTRACK</div>
+      <div class="sub" id="millNameLabel">Flour Mill Maintenance</div>
+    </div>
+    <nav class="nav" id="navList"></nav>
+    <div class="sidebar-foot">
+      <div>Shared with everyone who opens this page.</div>
+      <div class="theme-toggle">
+        <button data-theme-btn="dark">Dark</button>
+        <button data-theme-btn="light">Light</button>
+        <button data-theme-btn="auto">Auto</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <button class="menu-btn" id="menuBtn">☰</button>
+        <h1 id="viewTitle">Dashboard</h1>
+      </div>
+      <div style="display:flex; align-items:center; gap:18px;">
+        <div class="clock" id="clock">—</div>
+        <div class="sync-pill"><span class="dot" id="syncDot"></span><span id="syncText">Connecting…</span></div>
+        <div style="display:flex; align-items:center; gap:10px; font-size:12.5px;">
+          <span id="userChip" style="color:var(--text-dim);"></span>
+          <button class="btn btn-sm btn-ghost" id="logoutBtn">Sign out</button>
+        </div>
+      </div>
+    </div>
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="view active" id="view-dashboard">
+        <div id="dashAlert"></div>
+        <div class="kpi-grid" id="kpiGrid"></div>
+        <div class="dash-grid">
+          <div>
+            <div class="panel">
+              <div class="panel-head"><h3>Active breakdowns &amp; repairs</h3><span class="meta" id="activeCount"></span></div>
+              <div class="panel-body"><div class="row-list" id="activeEventsList"></div></div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><h3>Downtime, last 8 weeks</h3><span class="meta">hours per week</span></div>
+              <div class="panel-body pad"><div class="bar-chart" id="downtimeChart"></div></div>
+            </div>
+          </div>
+          <div>
+            <div class="panel">
+              <div class="panel-head"><h3>Low stock spares</h3><span class="meta" id="lowStockCount"></span></div>
+              <div class="panel-body"><div class="row-list" id="lowStockList"></div></div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><h3>Motors currently out for repair</h3></div>
+              <div class="panel-body"><div class="row-list" id="outForRepairList"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MOTORS -->
+      <div class="view" id="view-motors">
+        <div class="page-head">
+          <div><h2>Motors</h2><p>Every motor in the mill, its status, and where it is right now.</p></div>
+          <div style="display:flex; gap:8px;"><button class="btn" id="exportMotorsBtn">⬇ Export CSV</button><button class="btn" id="importMotorsBtn">⬆ Import CSV</button><input type="file" id="importMotorsFile" accept=".csv" style="display:none;"><button class="btn" id="bulkMotorBtn">+ Bulk add</button><button class="btn btn-primary" id="addMotorBtn">+ Add motor</button></div>
+        </div>
+        <div class="toolbar">
+          <input type="search" id="motorSearch" placeholder="Search anything — tag, name, department, location…">
+          <select id="motorDeptFilter"><option value="">All departments</option></select>
+          <select id="motorLocTypeFilter"><option value="">All locations</option><option>Mill floor</option><option>Internal workshop</option><option>External workshop</option><option>Container</option><option>Store</option><option>Vendor</option><option>Other</option></select>
+          <input type="number" id="motorKwFilter" placeholder="kW" style="width:80px;" step="0.1">
+          <input type="number" id="motorRpmFilter" placeholder="RPM" style="width:85px;">
+          <input type="number" id="motorVoltFilter" placeholder="Voltage" style="width:90px;">
+          <div class="chip-filters" id="motorStatusFilter">
+            <div class="chip active" data-status="">All</div>
+            <div class="chip" data-status="running">Running</div>
+            <div class="chip" data-status="standby">Standby</div>
+            <div class="chip" data-status="breakdown">Breakdown</div>
+            <div class="chip" data-status="repair">Under repair</div>
+          </div>
+        </div>
+        <div id="motorsBulkBar" style="display:none; align-items:center; gap:10px; padding:10px 16px; background:var(--rust-bg); border:1px solid var(--rust); border-radius:var(--radius); margin-bottom:12px;">
+          <span id="motorsBulkCount" style="font-size:13px; color:var(--rust); font-weight:600;"></span>
+          <button class="btn btn-sm btn-danger" id="motorsBulkDeleteBtn">Delete selected</button>
+          <button class="btn btn-sm btn-ghost" id="motorsBulkClearBtn">Clear selection</button>
+        </div>
+        <div class="panel"><div class="table-wrap"><table>
+          <thead><tr><th style="width:34px;"><input type="checkbox" id="motorsSelectAll"></th><th>Tag</th><th>Motor</th><th>Department</th><th>Rating</th><th>Status</th><th>Location</th><th></th></tr></thead>
+          <tbody id="motorsTbody"></tbody>
+        </table></div></div>
+      </div>
+
+      <!-- SPARE MOTORS (new + repaired standby units) -->
+      <div class="view" id="view-sparemotors">
+        <div class="page-head">
+          <div><h2>Spare motors</h2><p>Complete replacement motors ready to swap in — new units bought for stock, and repaired units currently standing by in the workshop.</p></div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn" id="exportSpareMotorsBtn">⬇ Export CSV</button>
+            <button class="btn" id="importSpareMotorsBtn">⬆ Import CSV</button>
+            <input type="file" id="importSpareMotorsFile" accept=".csv" style="display:none;">
+            <button class="btn" id="bulkSpareMotorBtn">+ Bulk add</button>
+            <button class="btn btn-primary" id="addSpareMotorBtn">+ Add spare motor</button>
+          </div>
+        </div>
+        <div class="kpi-grid" id="spareMotorsKpis"></div>
+        <div class="panel">
+          <div class="panel-head"><h3>🆕 New — bought as spares, in store</h3></div>
+          <div class="panel-body" id="spareMotorsNewList"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>🔧 Repaired — standing by in workshop</h3></div>
+          <div class="panel-body" id="spareMotorsRepairedList"></div>
+        </div>
+        <div class="footer-note">This list is the same data as Motors, filtered to standby units — add one here or from Motors → Add motor with Status set to Standby; either way it shows up in both places automatically.</div>
+      </div>
+
+      <!-- UNDER REPAIR (internal vs external workshop) -->
+      <div class="view" id="view-underrepair">
+        <div class="page-head">
+          <div><h2>Under repair</h2><p>Every motor currently away being fixed — whether from an active breakdown ticket or sent proactively — split by where it's being worked on.</p></div>
+          <button class="btn" id="exportUnderRepairBtn">⬇ Export CSV</button>
+        </div>
+        <div class="kpi-grid" id="underRepairKpis"></div>
+        <div class="panel">
+          <div class="panel-head"><h3>🏭 Internal (central) workshop</h3></div>
+          <div class="panel-body" id="underRepairInternalList"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>🚚 External workshop</h3></div>
+          <div class="panel-body" id="underRepairExternalList"></div>
+        </div>
+        <div class="panel" id="underRepairUnspecifiedPanel" style="display:none;">
+          <div class="panel-head"><h3>❔ Workshop not specified</h3></div>
+          <div class="panel-body" id="underRepairUnspecifiedList"></div>
+        </div>
+      </div>
+
+      <!-- SPARES (parts) -->
+      <div class="view" id="view-spares">
+        <div class="page-head">
+          <div><h2>Parts inventory</h2><p>Consumable parts stock — bearings, belts, electrical components, and the like. For complete replacement motors, see Spare Motors.</p></div>
+          <div style="display:flex; gap:8px;"><button class="btn" id="exportSparesBtn">⬇ Export CSV</button><button class="btn" id="bulkSpareBtn">+ Bulk add</button><button class="btn btn-primary" id="addSpareBtn">+ Add spare</button></div>
+        </div>
+        <div class="toolbar">
+          <input type="search" id="spareSearch" placeholder="Search anything — name, part number, location, supplier…">
+          <select id="spareCatFilter"><option value="">All categories</option></select>
+          <div class="chip-filters">
+            <div class="chip active" data-low="">All</div>
+            <div class="chip" data-low="1">Low stock only</div>
+          </div>
+        </div>
+        <div id="sparesBulkBar" style="display:none; align-items:center; gap:10px; padding:10px 16px; background:var(--rust-bg); border:1px solid var(--rust); border-radius:var(--radius); margin-bottom:12px;">
+          <span id="sparesBulkCount" style="font-size:13px; color:var(--rust); font-weight:600;"></span>
+          <button class="btn btn-sm btn-danger" id="sparesBulkDeleteBtn">Delete selected</button>
+          <button class="btn btn-sm btn-ghost" id="sparesBulkClearBtn">Clear selection</button>
+        </div>
+        <div class="panel"><div class="table-wrap"><table>
+          <thead><tr><th style="width:34px;"><input type="checkbox" id="sparesSelectAll"></th><th>Part</th><th>Category</th><th>In stock</th><th>Min</th><th>Location</th><th>Unit cost</th><th></th><th></th></tr></thead>
+          <tbody id="sparesTbody"></tbody>
+        </table></div></div>
+      </div>
+
+      <!-- BREAKDOWNS -->
+      <div class="view" id="view-events">
+        <div class="page-head">
+          <div><h2>Breakdowns &amp; repairs</h2><p>Log a failure, track repair progress, and record downtime.</p></div>
+          <div style="display:flex; gap:8px;"><button class="btn" id="exportEventsBtn">⬇ Export CSV</button><button class="btn btn-primary" id="addEventBtn">+ Report breakdown</button></div>
+        </div>
+        <div class="toolbar">
+          <input type="search" id="eventSearch" placeholder="Search anything — motor, description, location…">
+          <div class="chip-filters" id="eventStageFilter">
+            <div class="chip active" data-stage="open">Open</div>
+            <div class="chip" data-stage="">All</div>
+            <div class="chip" data-stage="resolved">Resolved</div>
+          </div>
+        </div>
+        <div id="eventsBulkBar" style="display:none; align-items:center; gap:10px; padding:10px 16px; background:var(--rust-bg); border:1px solid var(--rust); border-radius:var(--radius); margin-bottom:12px;">
+          <span id="eventsBulkCount" style="font-size:13px; color:var(--rust); font-weight:600;"></span>
+          <button class="btn btn-sm btn-danger" id="eventsBulkDeleteBtn">Delete selected</button>
+          <button class="btn btn-sm btn-ghost" id="eventsBulkClearBtn">Clear selection</button>
+        </div>
+        <div class="panel"><div class="table-wrap"><table>
+          <thead><tr><th style="width:34px;"><input type="checkbox" id="eventsSelectAll"></th><th>Motor</th><th>Reported</th><th>Issue</th><th>Urgency</th><th>Stage</th><th>Location</th><th>Downtime</th><th></th></tr></thead>
+          <tbody id="eventsTbody"></tbody>
+        </table></div></div>
+      </div>
+
+      <!-- REPORTS -->
+      <div class="view" id="view-reports">
+        <div class="page-head">
+          <div><h2>Reports</h2><p>Where the hours and the money are going.</p></div>
+          <button class="btn" id="printReportBtn">🖨 Print / Save as PDF</button>
+        </div>
+        <div class="dash-grid">
+          <div>
+            <div class="panel">
+              <div class="panel-head"><h3>Most-used spares (all time)</h3></div>
+              <div class="panel-body pad" id="topSparesChart"></div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><h3>Breakdowns by motor</h3></div>
+              <div class="panel-body pad" id="topMotorsChart"></div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><h3>Reliability — MTTR &amp; MTBF by motor</h3><span class="meta">worst first</span></div>
+              <div class="panel-body" id="reliabilityTable"></div>
+            </div>
+          </div>
+          <div>
+            <div class="panel">
+              <div class="panel-head"><h3>Downtime by department</h3></div>
+              <div class="panel-body pad" id="deptDowntimeChart"></div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><h3>Summary</h3></div>
+              <div class="panel-body pad">
+                <div class="kv" id="reportSummary"></div>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><h3>Recent activity</h3><span class="meta">who changed what, and when</span></div>
+              <div class="panel-body" id="recentActivityLog"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- USERS (admin only) -->
+      <div class="view" id="view-users">
+        <div class="page-head">
+          <div><h2>Staff accounts</h2><p>Who can log in, and what they're allowed to do.</p></div>
+          <button class="btn btn-primary" id="addUserBtn">+ Add account</button>
+        </div>
+        <div class="panel"><div class="table-wrap"><table>
+          <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Phone</th><th>Added</th><th></th></tr></thead>
+          <tbody id="usersTbody"></tbody>
+        </table></div></div>
+        <div class="footer-note">Roles: <b>Admin</b> — full access, manages accounts. <b>Storekeeper</b> — manages spares inventory. <b>Technician</b> — manages motors and breakdown/repair workflow.</div>
+
+        <div class="panel" style="margin-top:22px;">
+          <div class="panel-head"><h3>Backup &amp; restore</h3></div>
+          <div class="panel-body pad">
+            <div class="callout amber" style="margin-bottom:16px;">
+              <span>⚠</span>
+              <div>If this app is hosted on a plan without persistent storage, all data resets when the service restarts or redeploys. <b>Download a backup regularly</b> — especially right before you know a restart is coming.</div>
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+              <button class="btn btn-primary" id="downloadBackupBtn">⬇ Download backup</button>
+              <button class="btn" id="restoreBackupBtn">⬆ Restore from backup file</button>
+              <input type="file" id="restoreFileInput" accept="application/json" style="display:none;">
+              <span id="backupStatus" style="font-size:12.5px; color:var(--text-faint);"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-note">Signed in as <span id="footUser"></span>. Built for tracking motors and spares across the mill floor, workshop, and outside vendors.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Motor Drawer -->
+<div class="drawer-overlay" id="motorDrawerOverlay"></div>
+<div class="drawer" id="motorDrawer"></div>
+
+<!-- Event Drawer -->
+<div class="drawer-overlay" id="eventDrawerOverlay"></div>
+<div class="drawer" id="eventDrawer"></div>
+
+<!-- Generic Modal mount -->
+<div class="overlay" id="modalOverlay"><div class="modal" id="modalMount"></div></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================= AUTH + API LAYER ============================= */
+const API = ''; // same origin
+let authToken = null;
+let currentUser = null;
+const state = { motors:[], spares:[], events:[], users:[] };
+let appSettings = { spareMotorReorderNew: '2', spareMotorReorderRepaired: '2' };
+let dbReady = false;
+let pollTimer = null;
+
+function setSync(text, ok){
+  document.getElementById('syncText').textContent = text;
+  document.getElementById('syncDot').className = 'dot' + (ok?'':' offline');
+}
+
+async function apiFetch(path, opts){
+  opts = opts || {};
+  opts.headers = Object.assign({'Content-Type':'application/json'}, opts.headers||{});
+  if(authToken) opts.headers['Authorization'] = 'Bearer ' + authToken;
+  const resp = await fetch(API + path, opts);
+  if(resp.status === 401){
+    doLogout('Your session expired. Please sign in again.');
+    throw new Error('unauthorized');
+  }
+  let data = null;
+  try{ data = await resp.json(); }catch(e){}
+  if(!resp.ok){
+    throw new Error((data && data.error) || ('Request failed: ' + resp.status));
+  }
+  return data;
+}
+
+/* ---- write helpers used throughout the app ---- */
+async function colAdd(colName, data){
+  const path = {motors:'/api/motors', spares:'/api/spares', events:'/api/events'}[colName];
+  const res = await apiFetch(path, {method:'POST', body:JSON.stringify(data)});
+  await refreshAll();
+  return res && res.id;
+}
+async function docUpdate(colName, id, data){
+  if(colName==='events'){
+    // events use PUT with {stage, repairLocation, condition, note}
+    await apiFetch('/api/events/'+id, {method:'PUT', body:JSON.stringify(data)});
+  } else {
+    const base = {motors:'/api/motors', spares:'/api/spares'}[colName];
+    await apiFetch(base+'/'+id, {method:'PUT', body:JSON.stringify(data)});
+  }
+  await refreshAll();
+}
+async function docDelete(colName, id){
+  const path = {motors:'/api/motors', spares:'/api/spares', events:'/api/events'}[colName];
+  await apiFetch(path+'/'+id, {method:'DELETE'});
+  await refreshAll();
+}
+async function adjustSpare(id, delta){
+  await apiFetch('/api/spares/'+id+'/adjust', {method:'POST', body:JSON.stringify({delta})});
+  await refreshAll();
+}
+async function useSpareOnEvent(eventId, spareId, qty){
+  await apiFetch('/api/events/'+eventId+'/use-spare', {method:'POST', body:JSON.stringify({spareId, qty})});
+  await refreshAll();
+}
+async function resolveEvent(eventId){
+  await apiFetch('/api/events/'+eventId+'/resolve', {method:'POST'});
+  await refreshAll();
+}
+async function bulkAddMotors(rows){
+  await apiFetch('/api/motors/bulk', {method:'POST', body:JSON.stringify({motors:rows})});
+  await refreshAll();
+}
+async function bulkAddSpares(rows){
+  await apiFetch('/api/spares/bulk', {method:'POST', body:JSON.stringify({spares:rows})});
+  await refreshAll();
+}
+
+async function refreshAll(){
+  try{
+    const [motors, spares, events, settings] = await Promise.all([
+      apiFetch('/api/motors'), apiFetch('/api/spares'), apiFetch('/api/events'), apiFetch('/api/settings'),
+    ]);
+    state.motors = motors; state.spares = spares; state.events = events;
+    appSettings = settings;
+    if(currentUser && currentUser.role === 'admin'){
+      try{ state.users = await apiFetch('/api/auth/users'); }catch(e){}
+    }
+    dbReady = true;
+    setSync('Synced · ' + new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}), true);
+    renderAll();
+  }catch(e){
+    setSync('Sync error — retrying…', false);
+  }
+}
+
+function startPolling(){
+  if(pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(refreshAll, 15000);
+}
+
+/* ---- login / logout ---- */
+function hideBootLoading(){
+  const el = document.getElementById('bootLoading');
+  if(el) el.style.display = 'none';
+}
+function showLogin(msg){
+  hideBootLoading();
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  const err = document.getElementById('li-error');
+  if(msg){ err.textContent = msg; err.style.display='block'; } else { err.style.display='none'; }
+}
+function showApp(){
+  hideBootLoading();
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+}
+async function doLogin(username, password){
+  const err = document.getElementById('li-error');
+  err.style.display = 'none';
+  try{
+    const res = await apiFetch('/api/auth/login', {method:'POST', body:JSON.stringify({username,password})});
+    authToken = res.token; currentUser = res.user;
+    try{ localStorage.setItem('motortrack_token', authToken); }catch(e){}
+    onLoggedIn();
+  }catch(e){
+    err.textContent = e.message || 'Could not sign in.';
+    err.style.display = 'block';
+  }
+}
+function doLogout(msg){
+  authToken = null; currentUser = null;
+  if(pollTimer) clearInterval(pollTimer);
+  try{ localStorage.removeItem('motortrack_token'); }catch(e){}
+  showLogin(msg);
+}
+function onLoggedIn(){
+  showApp();
+  document.getElementById('userChip').textContent = currentUser.name + ' · ' + currentUser.role;
+  document.getElementById('footUser').textContent = currentUser.name + ' (' + currentUser.role + ')';
+  applyRolePermissions();
+  buildNav();
+  refreshAll();
+  startPolling();
+}
+function applyRolePermissions(){
+  const role = currentUser.role;
+  const canManageMotors = role==='admin' || role==='technician';
+  const canManageSpares = role==='admin' || role==='storekeeper';
+  const canManageEvents = role==='admin' || role==='technician';
+  document.getElementById('addMotorBtn').style.display = canManageMotors ? '' : 'none';
+  document.getElementById('bulkMotorBtn').style.display = canManageMotors ? '' : 'none';
+  document.getElementById('addSpareBtn').style.display = canManageSpares ? '' : 'none';
+  document.getElementById('bulkSpareBtn').style.display = canManageSpares ? '' : 'none';
+  document.getElementById('addEventBtn').style.display = canManageEvents ? '' : 'none';
+}
+
+async function initAuth(){
+  let saved = null;
+  try{ saved = localStorage.getItem('motortrack_token'); }catch(e){}
+  if(!saved){ showLogin(); return; }
+  authToken = saved;
+  try{
+    const res = await apiFetch('/api/auth/me');
+    currentUser = res.user;
+    onLoggedIn();
+  }catch(e){
+    showLogin();
+  }
+}
+
+document.getElementById('li-submit').addEventListener('click', ()=>{
+  doLogin(document.getElementById('li-user').value.trim(), document.getElementById('li-pass').value);
+});
+document.getElementById('li-pass').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('li-submit').click(); });
+document.getElementById('logoutBtn').addEventListener('click', ()=> doLogout());
+
+/* ============================= NAV / VIEWS ============================= */
+const NAV = [
+  {id:'dashboard', label:'Dashboard', icon:'grid'},
+  {id:'motors', label:'Motors', icon:'motor'},
+  {id:'sparemotors', label:'Spare Motors', icon:'swap'},
+  {id:'underrepair', label:'Under Repair', icon:'wrench'},
+  {id:'events', label:'Breakdowns', icon:'bolt'},
+  {id:'reports', label:'Reports', icon:'chart'},
+  {id:'users', label:'Staff accounts', icon:'users', adminOnly:true},
+];
+const ICONS = {
+  grid:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>',
+  motor:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="7" width="12" height="10" rx="1.5"/><path d="M16 10h2a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2h-2"/><path d="M4 10H2M4 14H2M9 7V5M13 7V5"/></svg>',
+  box:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>',
+  bolt:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z"/></svg>',
+  chart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>',
+  users:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.6 3-6.2 6.5-6.2s6.5 2.6 6.5 6.2"/><circle cx="17.5" cy="8.5" r="2.4"/><path d="M15.6 14c2.8.3 4.9 2.6 4.9 6"/></svg>',
+  swap:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h13l-3-3M20 17H7l3 3"/></svg>',
+  wrench:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.8 2.8-2-2z"/></svg>',
+};
+let currentView = 'dashboard';
+
+function buildNav(){
+  const nav = document.getElementById('navList');
+  nav.innerHTML = '';
+  const isAdmin = currentUser && currentUser.role === 'admin';
+  NAV.forEach(item=>{
+    if(item.adminOnly && !isAdmin) return;
+    const btn = document.createElement('button');
+    btn.className = 'nav-item' + (item.id===currentView?' active':'');
+    btn.dataset.view = item.id;
+    btn.innerHTML = ICONS[item.icon] + '<span>'+item.label+'</span><span class="count" id="navcount-'+item.id+'"></span>';
+    btn.onclick = ()=>{ currentView=item.id; showView(item.id); document.getElementById('sidebar').classList.remove('open'); };
+    nav.appendChild(btn);
+  });
+}
+function showView(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.view===id));
+  const titles = {dashboard:'Dashboard', motors:'Motors', sparemotors:'Spare Motors', underrepair:'Under Repair', spares:'Parts inventory', events:'Breakdowns & repairs', reports:'Reports', users:'Staff accounts'};
+  document.getElementById('viewTitle').textContent = titles[id];
+  renderAll();
+}
+document.getElementById('menuBtn').addEventListener('click', ()=> document.getElementById('sidebar').classList.toggle('open'));
+
+/* ============================= UTIL ============================= */
+function fmtN(n){ return (n||0).toLocaleString('en-NG'); }
+function fmtMoney(n){ return '₦' + fmtN(Math.round(n||0)); }
+function fmtDate(iso){ if(!iso) return '—'; const d=new Date(iso); return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
+function fmtDateTime(iso){ if(!iso) return '—'; const d=new Date(iso); return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}) + ' · ' + d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
+function timeAgo(iso){
+  if(!iso) return '—';
+  const s = (Date.now()-new Date(iso).getTime())/1000;
+  if(s<60) return 'just now';
+  if(s<3600) return Math.floor(s/60)+'m ago';
+  if(s<86400) return Math.floor(s/3600)+'h ago';
+  return Math.floor(s/86400)+'d ago';
+}
+function motorById(id){ return state.motors.find(m=>String(m.id)===String(id)); }
+function spareById(id){ return state.spares.find(s=>String(s.id)===String(id)); }
+function uid(){ return 'x'+Math.random().toString(36).slice(2,10); }
+function escapeHtml(s){ return (s||'').toString().replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function exportCsv(filename, headers, rows){
+  const esc = v => '"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const csv = [headers.map(esc).join(','), ...rows.map(r=>r.map(esc).join(','))].join('\r\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+const selection = { motors: new Set(), spares: new Set(), events: new Set() };
+let lastMotorsList = [], lastSparesList = [], lastEventsList = [];
+
+function updateBulkBar(kind, barId, countId){
+  const bar = document.getElementById(barId);
+  if(!bar) return;
+  const n = selection[kind].size;
+  bar.style.display = n ? 'flex' : 'none';
+  document.getElementById(countId).textContent = n + ' selected';
+}
+
+/** Checks that each [elementId, label] pair has a non-empty value. On the
+ * first empty one, highlights it, focuses it, and returns false. */
+function requireFields(pairs){
+  for(const [id,label] of pairs){
+    const el = document.getElementById(id);
+    if(!el) continue;
+    if(!el.value || !el.value.trim()){
+      el.style.outline = '2px solid var(--rust)';
+      el.focus();
+      alert(label + ' is required.');
+      return false;
+    } else {
+      el.style.outline = '';
+    }
+  }
+  return true;
+}
+
+const STAGE_LABELS = {reported:'Reported', diagnosing:'Diagnosing', awaiting_parts:'Awaiting parts', in_repair:'In repair', resolved:'Resolved'};
+const STAGE_ORDER = ['reported','diagnosing','awaiting_parts','in_repair','resolved'];
+
+function isEventOpen(ev){ return ev.stage !== 'resolved'; }
+function computeMotorStatus(m){
+  if(m.manualStatus === 'decommissioned') return 'decommissioned';
+  const openEv = state.events.filter(e=>e.motorId===m.id && isEventOpen(e)).sort((a,b)=>new Date(b.reportedAt)-new Date(a.reportedAt))[0];
+  if(openEv){
+    return (openEv.stage==='in_repair') ? 'repair' : 'breakdown';
+  }
+  if(m.manualStatus === 'standby') return 'standby';
+  if(m.manualStatus === 'repair') return 'repair';
+  return 'running';
+}
+function currentLocationFor(m){
+  const openEv = state.events.filter(e=>e.motorId===m.id && isEventOpen(e)).sort((a,b)=>new Date(b.reportedAt)-new Date(a.reportedAt))[0];
+  if(openEv && openEv.stage==='in_repair' && openEv.repairLocationType) return openEv.repairLocationType + (openEv.repairLocation ? ' — '+openEv.repairLocation : '');
+  if(openEv && openEv.repairLocation) return openEv.repairLocation;
+  return m.currentLocation || '—';
+}
+function currentConditionFor(m){
+  const openEv = state.events.filter(e=>e.motorId===m.id && isEventOpen(e)).sort((a,b)=>new Date(b.reportedAt)-new Date(a.reportedAt))[0];
+  if(openEv && openEv.condition) return openEv.condition;
+  return m.condition || '—';
+}
+function downtimeHoursOf(ev){
+  if(ev.downtimeHours != null) return ev.downtimeHours;
+  const start = new Date(ev.reportedAt).getTime();
+  const end = ev.resolvedAt ? new Date(ev.resolvedAt).getTime() : Date.now();
+  return Math.max(0,(end-start)/3600000);
+}
+
+/* ============================= RENDER: DASHBOARD ============================= */
+function renderDashboard(){
+  const motors = state.motors, spares = state.spares, events = state.events;
+  const openEvents = events.filter(isEventOpen);
+  const lowStock = spares.filter(s=> (s.qty||0) <= (s.minQty||0));
+  const outForRepair = motors.filter(m=> computeMotorStatus(m)==='repair');
+  const breakdownNow = motors.filter(m=> computeMotorStatus(m)==='breakdown');
+  const spareMotorsReady = motors.filter(m=> computeMotorStatus(m)==='standby');
+
+  const resolvedThisMonth = events.filter(e=> e.stage==='resolved' && e.resolvedAt && (Date.now()-new Date(e.resolvedAt).getTime()) < 30*86400000);
+  const avgDowntime = resolvedThisMonth.length ? resolvedThisMonth.reduce((a,e)=>a+downtimeHoursOf(e),0)/resolvedThisMonth.length : 0;
+  const totalDowntimeOpen = openEvents.reduce((a,e)=>a+downtimeHoursOf(e),0);
+
+  const kpis = [
+    {label:'Motors down right now', value: breakdownNow.length + outForRepair.length, cls: (breakdownNow.length+outForRepair.length)>0?'crit':'good', delta: motors.length+' motors total'},
+    {label:'Spare motors ready in store', value: spareMotorsReady.length, cls: spareMotorsReady.length>0?'good':'warn', delta: spareMotorsReady.length? spareMotorsReady.map(m=>m.tag).join(', ') : 'none on standby — nothing to swap in'},
+    {label:'Open breakdown tickets', value: openEvents.length, cls: openEvents.length>0?'warn':'good', delta: openEvents.filter(e=>e.urgency==='high').length+' marked high urgency'},
+    {label:'Low stock spares', value: lowStock.length, cls: lowStock.length>0?'crit':'good', delta: spares.length+' part lines tracked'},
+    {label:'Hours lost — open issues', value: Math.round(totalDowntimeOpen), cls:'info', delta:'running total, all open tickets'},
+    {label:'Avg. repair time (30d)', value: avgDowntime? avgDowntime.toFixed(1):'0.0', cls:'info', delta: resolvedThisMonth.length+' resolved in last 30 days'},
+  ];
+  document.getElementById('kpiGrid').innerHTML = kpis.map(k=>
+    '<div class="kpi '+k.cls+'"><div class="label">'+k.label+'</div><div class="value">'+k.value+'</div><div class="delta">'+k.delta+'</div></div>'
+  ).join('');
+
+  // Alert banner
+  const alertEl = document.getElementById('dashAlert');
+  const highUrgencyOpen = openEvents.filter(e=>e.urgency==='high');
+  if(highUrgencyOpen.length){
+    alertEl.innerHTML = '<div class="callout"><span>⚠</span><div><b>'+highUrgencyOpen.length+' high-urgency breakdown'+(highUrgencyOpen.length>1?'s':'')+'</b> need attention: '+
+      highUrgencyOpen.map(e=>{ const m=motorById(e.motorId); return escapeHtml(m?m.tag:'?'); }).join(', ') + '.</div></div>';
+  } else if(lowStock.length){
+    alertEl.innerHTML = '<div class="callout amber"><span>⚠</span><div><b>'+lowStock.length+' spare'+(lowStock.length>1?'s are':' is')+' at or below reorder level.</b> Check the Spares tab before the next breakdown.</div></div>';
+  } else {
+    alertEl.innerHTML = '';
+  }
+
+  // Active events list
+  const activeSorted = openEvents.slice().sort((a,b)=> (b.urgency==='high')-(a.urgency==='high') || new Date(b.reportedAt)-new Date(a.reportedAt));
+  document.getElementById('activeCount').textContent = openEvents.length + ' open';
+  document.getElementById('activeEventsList').innerHTML = activeSorted.length ? activeSorted.slice(0,8).map(ev=>{
+    const m = motorById(ev.motorId);
+    return '<div class="row-item" data-open-event="'+ev.id+'">'+
+      '<span class="tag">'+escapeHtml(m?m.tag:'?')+'</span>'+
+      '<div class="main-txt"><div class="t1">'+escapeHtml(ev.description||'No description').slice(0,60)+'</div>'+
+      '<div class="t2">'+escapeHtml(m?m.department:'')+' · reported '+timeAgo(ev.reportedAt)+'</div></div>'+
+      '<span class="badge urg-'+ev.urgency+'">'+ev.urgency+'</span>'+
+      '<span class="badge repair" style="margin-left:6px;">'+STAGE_LABELS[ev.stage]+'</span>'+
+      '</div>';
+  }).join('') : '<div class="empty-note">No open breakdowns. Everything is running.</div>';
+
+  // downtime chart, last 8 weeks
+  const weeks = [];
+  for(let i=7;i>=0;i--){
+    const end = Date.now() - i*7*86400000;
+    const start = end - 7*86400000;
+    weeks.push({start,end,hours:0});
+  }
+  events.forEach(ev=>{
+    const evStart = new Date(ev.reportedAt).getTime();
+    const evEnd = ev.resolvedAt ? new Date(ev.resolvedAt).getTime() : Date.now();
+    weeks.forEach(w=>{
+      const overlapStart = Math.max(evStart, w.start);
+      const overlapEnd = Math.min(evEnd, w.end);
+      if(overlapEnd>overlapStart) w.hours += (overlapEnd-overlapStart)/3600000;
+    });
+  });
+  const maxH = Math.max(1, ...weeks.map(w=>w.hours));
+  document.getElementById('downtimeChart').innerHTML = weeks.map(w=>{
+    const h = Math.max(2, (w.hours/maxH)*120);
+    return '<div class="col"><div class="val">'+w.hours.toFixed(0)+'</div><div class="bar" style="height:'+h+'px;"></div><div class="lbl">'+new Date(w.start).toLocaleDateString('en-GB',{day:'2-digit',month:'short'})+'</div></div>';
+  }).join('');
+
+  // Low stock list
+  const lowSorted = lowStock.slice().sort((a,b)=>(a.qty-a.minQty)-(b.qty-b.minQty));
+  document.getElementById('lowStockCount').textContent = lowStock.length + ' below reorder level';
+  document.getElementById('lowStockList').innerHTML = lowSorted.length ? lowSorted.slice(0,8).map(s=>
+    '<div class="row-item" data-open-spare="'+s.id+'">'+
+    '<div class="main-txt"><div class="t1">'+escapeHtml(s.name)+'</div><div class="t2">'+escapeHtml(s.partNumber||'')+' · '+escapeHtml(s.location||'')+'</div></div>'+
+    '<span class="badge low">'+s.qty+' / min '+s.minQty+'</span>'+
+    '</div>'
+  ).join('') : '<div class="empty-note">All spares are above their reorder level.</div>';
+
+  // Out for repair
+  document.getElementById('outForRepairList').innerHTML = outForRepair.length ? outForRepair.map(m=>{
+    const openEv = state.events.filter(e=>e.motorId===m.id && isEventOpen(e))[0];
+    return '<div class="row-item" data-open-motor="'+m.id+'">'+
+      '<span class="tag">'+escapeHtml(m.tag)+'</span>'+
+      '<div class="main-txt"><div class="t1">'+escapeHtml(m.name)+'</div><div class="t2">'+escapeHtml(currentLocationFor(m))+'</div></div>'+
+      '<span class="side">'+(openEv?downtimeHoursOf(openEv).toFixed(0)+'h so far':'')+'</span>'+
+      '</div>';
+  }).join('') : '<div class="empty-note">No motors are currently out for repair.</div>';
+
+  document.querySelectorAll('[data-open-motor]').forEach(el=>el.onclick=()=>openMotorDrawer(el.dataset.openMotor));
+  document.querySelectorAll('[data-open-event]').forEach(el=>el.onclick=()=>openEventDrawer(el.dataset.openEvent));
+  document.querySelectorAll('[data-open-spare]').forEach(el=>el.onclick=()=>{ currentView='spares'; showView('spares'); setTimeout(()=>openSpareModal(el.dataset.openSpare),50); });
+}
+
+/* ============================= RENDER: MOTORS ============================= */
+let motorFilters = {search:'', dept:'', status:'', locType:'', kw:'', rpm:'', volt:''};
+function renderMotors(){
+  const deptSel = document.getElementById('motorDeptFilter');
+  const depts = Array.from(new Set(state.motors.map(m=>m.department))).sort();
+  if(deptSel.dataset.built !== depts.join(',')){
+    deptSel.innerHTML = '<option value="">All departments</option>' + depts.map(d=>'<option value="'+escapeHtml(d)+'">'+escapeHtml(d)+'</option>').join('');
+    deptSel.dataset.built = depts.join(',');
+  }
+  let list = state.motors.slice();
+  if(motorFilters.search){
+    const q = motorFilters.search.toLowerCase();
+    list = list.filter(m => (m.tag+' '+m.name+' '+m.department+' '+currentLocationFor(m)+' '+(m.condition||'')).toLowerCase().includes(q));
+  }
+  if(motorFilters.dept) list = list.filter(m=>m.department===motorFilters.dept);
+  if(motorFilters.status) list = list.filter(m=>computeMotorStatus(m)===motorFilters.status);
+  if(motorFilters.locType) list = list.filter(m=>m.locationType===motorFilters.locType);
+  if(motorFilters.kw) list = list.filter(m=>Math.abs((m.kw||0)-parseFloat(motorFilters.kw))<0.05);
+  if(motorFilters.rpm) list = list.filter(m=>String(m.rpm)===String(motorFilters.rpm));
+  if(motorFilters.volt) list = list.filter(m=>String(m.voltage)===String(motorFilters.volt));
+  list.sort((a,b)=> a.tag.localeCompare(b.tag));
+  lastMotorsList = list;
+
+  document.getElementById('motorsTbody').innerHTML = list.length ? list.map(m=>{
+    const st = computeMotorStatus(m);
+    return '<tr data-id="'+m.id+'">'+
+      '<td onclick="event.stopPropagation()"><input type="checkbox" data-select-motor="'+m.id+'" '+(selection.motors.has(String(m.id))?'checked':'')+'></td>'+
+      '<td class="mono" style="color:var(--wheat); font-weight:600;">'+escapeHtml(m.tag)+'</td>'+
+      '<td><div class="cell-title">'+escapeHtml(m.name)+'</div></td>'+
+      '<td>'+escapeHtml(m.department)+'</td>'+
+      '<td class="mono">'+m.kw+' kW · '+m.rpm+' rpm</td>'+
+      '<td><span class="badge '+st+'">'+st+'</span></td>'+
+      '<td style="max-width:190px;"><div class="cell-title" style="font-size:12.5px;">'+escapeHtml(currentLocationFor(m))+'</div></td>'+
+      '<td><button class="btn btn-sm btn-ghost" data-edit-motor="'+m.id+'">Edit</button></td>'+
+      '</tr>';
+  }).join('') : '<tr><td colspan="8"><div class="empty-note">No motors match these filters.</div></td></tr>';
+
+  document.querySelectorAll('#motorsTbody tr[data-id]').forEach(tr=>{
+    tr.onclick = (e)=>{ if(e.target.closest('[data-edit-motor]')||e.target.closest('[data-select-motor]')) return; openMotorDrawer(tr.dataset.id); };
+  });
+  document.querySelectorAll('[data-edit-motor]').forEach(b=> b.onclick=(e)=>{ e.stopPropagation(); openMotorModal(b.dataset.editMotor); });
+  document.querySelectorAll('[data-select-motor]').forEach(cb=> cb.onclick=(e)=>{
+    e.stopPropagation();
+    const id = cb.dataset.selectMotor;
+    if(cb.checked) selection.motors.add(id); else selection.motors.delete(id);
+    updateBulkBar('motors','motorsBulkBar','motorsBulkCount');
+    document.getElementById('motorsSelectAll').checked = list.length>0 && list.every(m=>selection.motors.has(String(m.id)));
+  });
+  const selectAll = document.getElementById('motorsSelectAll');
+  selectAll.checked = list.length>0 && list.every(m=>selection.motors.has(String(m.id)));
+  selectAll.onclick = ()=>{
+    if(selectAll.checked) list.forEach(m=>selection.motors.add(String(m.id)));
+    else list.forEach(m=>selection.motors.delete(String(m.id)));
+    renderMotors();
+  };
+  updateBulkBar('motors','motorsBulkBar','motorsBulkCount');
+
+  // nav count
+  const el = document.getElementById('navcount-motors');
+  if(el){ el.textContent = state.motors.length; }
+}
+
+/* ============================= RENDER: SPARE MOTORS ============================= */
+function renderSpareMotorRow(m){
+  return '<div class="row-item" data-open-motor="'+m.id+'" style="cursor:pointer;">'+
+    '<span class="tag">'+escapeHtml(m.tag)+'</span>'+
+    '<div class="main-txt"><div class="t1">'+escapeHtml(m.name)+'</div><div class="t2">'+escapeHtml(m.department)+' · '+m.kw+' kW</div></div>'+
+    '<span class="side">'+escapeHtml(currentLocationFor(m))+(m.condition?'<br><span style="color:var(--text-faint);">'+escapeHtml(m.condition)+'</span>':'')+'</span>'+
+    '</div>';
+}
+function renderSpareMotors(){
+  const list = document.getElementById('spareMotorsNewList');
+  if(!list) return; // view not built yet
+  const standby = state.motors.filter(m=>computeMotorStatus(m)==='standby');
+  const fresh = standby.filter(m=>(m.standbyCategory||'new')==='new');
+  const repaired = standby.filter(m=>m.standbyCategory==='repaired');
+  const reorderNew = parseInt(appSettings.spareMotorReorderNew) || 0;
+  const reorderRepaired = parseInt(appSettings.spareMotorReorderRepaired) || 0;
+
+  document.getElementById('spareMotorsKpis').innerHTML = [
+    {label:'Total qty in stock', value:standby.length, cls:standby.length?'good':'warn'},
+    {label:'New — in store (reorder at '+reorderNew+')', value:fresh.length, cls: fresh.length<reorderNew ? 'crit':'good'},
+    {label:'Repaired — in workshop (reorder at '+reorderRepaired+')', value:repaired.length, cls: repaired.length<reorderRepaired ? 'crit':'good'},
+  ].map(k=>'<div class="kpi '+k.cls+'"><div class="label">'+k.label+'</div><div class="value">'+k.value+'</div></div>').join('');
+
+  document.getElementById('spareMotorsNewList').innerHTML =
+    '<div class="row-item" style="background:var(--surface-2);"><div class="main-txt t1">Reorder level</div>'+
+    '<span class="side"><input type="number" id="reorderNewInput" value="'+reorderNew+'" style="width:60px;"></span></div>'+
+    (fresh.length ? fresh.map(renderSpareMotorRow).join('') : '<div class="empty-note">No new spare motors recorded yet.</div>');
+  document.getElementById('spareMotorsRepairedList').innerHTML =
+    '<div class="row-item" style="background:var(--surface-2);"><div class="main-txt t1">Reorder level</div>'+
+    '<span class="side"><input type="number" id="reorderRepairedInput" value="'+reorderRepaired+'" style="width:60px;"></span></div>'+
+    (repaired.length ? repaired.map(renderSpareMotorRow).join('') : '<div class="empty-note">No repaired standby motors recorded yet.</div>');
+
+  document.querySelectorAll('#view-sparemotors [data-open-motor]').forEach(el=>el.onclick=()=>openMotorDrawer(el.dataset.openMotor));
+  const saveReorder = async (key, val)=>{ try{ await apiFetch('/api/settings', {method:'PUT', body:JSON.stringify({[key]:val})}); appSettings[key]=String(val); renderSpareMotors(); }catch(e){ alert(e.message); } };
+  const nEl = document.getElementById('reorderNewInput'); if(nEl) nEl.onchange = ()=> saveReorder('spareMotorReorderNew', nEl.value);
+  const rEl = document.getElementById('reorderRepairedInput'); if(rEl) rEl.onchange = ()=> saveReorder('spareMotorReorderRepaired', rEl.value);
+
+  const el = document.getElementById('navcount-sparemotors');
+  if(el) el.textContent = standby.length || '';
+}
+
+/* ============================= RENDER: UNDER REPAIR ============================= */
+let lastUnderRepairList = [];
+function getUnderRepairInfo(m){
+  const openEv = state.events.filter(e=>e.motorId===m.id && isEventOpen(e)).sort((a,b)=>new Date(b.reportedAt)-new Date(a.reportedAt))[0];
+  const inRepairEv = openEv && openEv.stage==='in_repair' ? openEv : null;
+  const workshop = (inRepairEv && inRepairEv.repairLocationType) || (['Internal workshop','External workshop'].includes(m.locationType) ? m.locationType : '');
+  const detail = (inRepairEv && inRepairEv.repairLocation) || m.placementDetail || '';
+  const since = (inRepairEv && inRepairEv.reportedAt) || m.updatedAt;
+  const reason = (inRepairEv && inRepairEv.description) || m.condition || '';
+  const hoursSince = (Date.now()-new Date(since).getTime())/3600000;
+  return {workshop, detail, since, reason, hoursSince, viaBreakdown: !!inRepairEv, eventId: inRepairEv?inRepairEv.id:null};
+}
+function renderUnderRepairRow(m){
+  const info = getUnderRepairInfo(m);
+  return '<div class="row-item" data-open-motor="'+m.id+'" style="cursor:pointer;">'+
+    '<span class="tag">'+escapeHtml(m.tag)+'</span>'+
+    '<div class="main-txt"><div class="t1">'+escapeHtml(m.name)+'</div><div class="t2">'+escapeHtml(m.department)+' · '+escapeHtml(info.detail||'no placement detail')+' · '+escapeHtml(info.reason||'')+'</div></div>'+
+    '<span class="side">'+(info.hoursSince>=48?(info.hoursSince/24).toFixed(1)+'d':info.hoursSince.toFixed(0)+'h')+' ago'+(info.viaBreakdown?'<br><span style="color:var(--amber);">via breakdown</span>':'')+'</span>'+
+    '</div>';
+}
+function renderUnderRepair(){
+  const listEl = document.getElementById('underRepairInternalList');
+  if(!listEl) return;
+  const underRepair = state.motors.filter(m=>computeMotorStatus(m)==='repair');
+  lastUnderRepairList = underRepair;
+  const internal = underRepair.filter(m=>getUnderRepairInfo(m).workshop==='Internal workshop');
+  const external = underRepair.filter(m=>getUnderRepairInfo(m).workshop==='External workshop');
+  const unspecified = underRepair.filter(m=>{ const w=getUnderRepairInfo(m).workshop; return w!=='Internal workshop' && w!=='External workshop'; });
+
+  document.getElementById('underRepairKpis').innerHTML = [
+    {label:'Total under repair', value:underRepair.length, cls:underRepair.length?'warn':'good'},
+    {label:'Internal workshop', value:internal.length, cls:'info'},
+    {label:'External workshop', value:external.length, cls:'info'},
+  ].map(k=>'<div class="kpi '+k.cls+'"><div class="label">'+k.label+'</div><div class="value">'+k.value+'</div></div>').join('');
+
+  document.getElementById('underRepairInternalList').innerHTML = internal.length ? internal.map(renderUnderRepairRow).join('') : '<div class="empty-note">Nothing in the internal workshop right now.</div>';
+  document.getElementById('underRepairExternalList').innerHTML = external.length ? external.map(renderUnderRepairRow).join('') : '<div class="empty-note">Nothing at an external workshop right now.</div>';
+  const unspecPanel = document.getElementById('underRepairUnspecifiedPanel');
+  if(unspecified.length){ unspecPanel.style.display='block'; document.getElementById('underRepairUnspecifiedList').innerHTML = unspecified.map(renderUnderRepairRow).join(''); }
+  else { unspecPanel.style.display='none'; }
+
+  document.querySelectorAll('#view-underrepair [data-open-motor]').forEach(el=>el.onclick=()=>openMotorDrawer(el.dataset.openMotor));
+  const el = document.getElementById('navcount-underrepair');
+  if(el){ el.textContent = underRepair.length || ''; el.classList.toggle('alert', underRepair.length>0); }
+}
+
+/* ============================= RENDER: SPARES ============================= */
+let spareFilters = {search:'', cat:'', low:''};
+function renderSpares(){
+  const catSel = document.getElementById('spareCatFilter');
+  const cats = Array.from(new Set(state.spares.map(s=>s.category))).sort();
+  if(catSel.dataset.built !== cats.join(',')){
+    catSel.innerHTML = '<option value="">All categories</option>' + cats.map(c=>'<option value="'+escapeHtml(c)+'">'+escapeHtml(c)+'</option>').join('');
+    catSel.dataset.built = cats.join(',');
+  }
+  let list = state.spares.slice();
+  if(spareFilters.search){
+    const q = spareFilters.search.toLowerCase();
+    list = list.filter(s=>(s.name+' '+(s.partNumber||'')+' '+(s.location||'')+' '+(s.supplier||'')+' '+(s.category||'')).toLowerCase().includes(q));
+  }
+  if(spareFilters.cat) list = list.filter(s=>s.category===spareFilters.cat);
+  if(spareFilters.low) list = list.filter(s=>(s.qty||0)<=(s.minQty||0));
+  list.sort((a,b)=> (a.qty-a.minQty)-(b.qty-b.minQty));
+  lastSparesList = list;
+
+  document.getElementById('sparesTbody').innerHTML = list.length ? list.map(s=>{
+    const low = (s.qty||0) <= (s.minQty||0);
+    return '<tr data-id="'+s.id+'">'+
+      '<td onclick="event.stopPropagation()"><input type="checkbox" data-select-spare="'+s.id+'" '+(selection.spares.has(String(s.id))?'checked':'')+'></td>'+
+      '<td><div class="cell-title">'+escapeHtml(s.name)+'</div><div class="cell-sub">'+escapeHtml(s.partNumber||'')+'</div></td>'+
+      '<td>'+escapeHtml(s.category)+'</td>'+
+      '<td class="num" style="color:'+(low?'var(--rust)':'var(--text)')+'; font-weight:600;">'+s.qty+'</td>'+
+      '<td class="num">'+s.minQty+'</td>'+
+      '<td style="max-width:170px; font-size:12.5px;">'+escapeHtml(s.location||'')+'</td>'+
+      '<td class="num">'+fmtMoney(s.unitCost)+'</td>'+
+      '<td><span class="badge '+(low?'low':'ok')+'">'+(low?'reorder':'ok')+'</span></td>'+
+      '<td onclick="event.stopPropagation()"><button class="btn btn-sm btn-danger" data-del-spare="'+s.id+'">Delete</button></td>'+
+      '</tr>';
+  }).join('') : '<tr><td colspan="9"><div class="empty-note">No spares match these filters.</div></td></tr>';
+
+  document.querySelectorAll('#sparesTbody tr[data-id]').forEach(tr=> tr.onclick = (e)=>{ if(e.target.closest('[data-select-spare]')||e.target.closest('[data-del-spare]')) return; openSpareModal(tr.dataset.id); });
+  document.querySelectorAll('[data-del-spare]').forEach(b=> b.onclick = async ()=>{
+    if(!confirm('Delete this spare part? This cannot be undone.')) return;
+    try{ await docDelete('spares', b.dataset.delSpare); }catch(e){ alert(e.message); }
+  });
+  document.querySelectorAll('[data-select-spare]').forEach(cb=> cb.onclick=(e)=>{
+    e.stopPropagation();
+    const id = cb.dataset.selectSpare;
+    if(cb.checked) selection.spares.add(id); else selection.spares.delete(id);
+    updateBulkBar('spares','sparesBulkBar','sparesBulkCount');
+    document.getElementById('sparesSelectAll').checked = list.length>0 && list.every(s=>selection.spares.has(String(s.id)));
+  });
+  const selectAll = document.getElementById('sparesSelectAll');
+  selectAll.checked = list.length>0 && list.every(s=>selection.spares.has(String(s.id)));
+  selectAll.onclick = ()=>{
+    if(selectAll.checked) list.forEach(s=>selection.spares.add(String(s.id)));
+    else list.forEach(s=>selection.spares.delete(String(s.id)));
+    renderSpares();
+  };
+  updateBulkBar('spares','sparesBulkBar','sparesBulkCount');
+}
+
+/* ============================= RENDER: EVENTS ============================= */
+let eventStageFilter = 'open';
+let eventSearch = '';
+function renderEvents(){
+  let list = state.events.slice();
+  if(eventStageFilter==='open') list = list.filter(isEventOpen);
+  else if(eventStageFilter==='resolved') list = list.filter(e=>e.stage==='resolved');
+  if(eventSearch){
+    const q = eventSearch.toLowerCase();
+    list = list.filter(ev=>{
+      const m = motorById(ev.motorId);
+      return ((m?m.tag+' '+m.name:'')+' '+(ev.description||'')+' '+(ev.repairLocation||'')+' '+(ev.condition||'')+' '+(ev.reportedBy||'')).toLowerCase().includes(q);
+    });
+  }
+  list.sort((a,b)=> new Date(b.reportedAt)-new Date(a.reportedAt));
+  lastEventsList = list;
+
+  document.getElementById('eventsTbody').innerHTML = list.length ? list.map(ev=>{
+    const m = motorById(ev.motorId);
+    return '<tr data-id="'+ev.id+'">'+
+      '<td onclick="event.stopPropagation()"><input type="checkbox" data-select-event="'+ev.id+'" '+(selection.events.has(String(ev.id))?'checked':'')+'></td>'+
+      '<td><span class="mono" style="color:var(--wheat); font-weight:600;">'+escapeHtml(m?m.tag:'?')+'</span><div class="cell-sub">'+escapeHtml(m?m.name:'')+'</div></td>'+
+      '<td style="font-size:12px;">'+fmtDateTime(ev.reportedAt)+'</td>'+
+      '<td style="max-width:220px;">'+escapeHtml((ev.description||'').slice(0,70))+'</td>'+
+      '<td><span class="badge urg-'+ev.urgency+'">'+ev.urgency+'</span></td>'+
+      '<td><span class="badge repair">'+STAGE_LABELS[ev.stage]+'</span></td>'+
+      '<td style="max-width:160px; font-size:12.5px;">'+escapeHtml(ev.repairLocation||'—')+'</td>'+
+      '<td class="mono">'+downtimeHoursOf(ev).toFixed(1)+'h</td>'+
+      '<td onclick="event.stopPropagation()"><button class="btn btn-sm btn-danger" data-del-event="'+ev.id+'">Delete</button></td>'+
+      '</tr>';
+  }).join('') : '<tr><td colspan="9"><div class="empty-note">Nothing here.</div></td></tr>';
+
+  document.querySelectorAll('#eventsTbody tr[data-id]').forEach(tr=> tr.onclick = (e)=>{ if(e.target.closest('[data-select-event]')||e.target.closest('[data-del-event]')) return; openEventDrawer(tr.dataset.id); });
+  document.querySelectorAll('[data-del-event]').forEach(b=> b.onclick = async ()=>{
+    if(!confirm('Delete this breakdown record? This cannot be undone.')) return;
+    try{ await docDelete('events', b.dataset.delEvent); }catch(e){ alert(e.message); }
+  });
+  document.querySelectorAll('[data-select-event]').forEach(cb=> cb.onclick=(e)=>{
+    e.stopPropagation();
+    const id = cb.dataset.selectEvent;
+    if(cb.checked) selection.events.add(id); else selection.events.delete(id);
+    updateBulkBar('events','eventsBulkBar','eventsBulkCount');
+    document.getElementById('eventsSelectAll').checked = list.length>0 && list.every(ev=>selection.events.has(String(ev.id)));
+  });
+  const selectAll = document.getElementById('eventsSelectAll');
+  selectAll.checked = list.length>0 && list.every(ev=>selection.events.has(String(ev.id)));
+  selectAll.onclick = ()=>{
+    if(selectAll.checked) list.forEach(ev=>selection.events.add(String(ev.id)));
+    else list.forEach(ev=>selection.events.delete(String(ev.id)));
+    renderEvents();
+  };
+  updateBulkBar('events','eventsBulkBar','eventsBulkCount');
+
+  const openCount = state.events.filter(isEventOpen).length;
+  const el = document.getElementById('navcount-events');
+  if(el){ el.textContent = openCount>0 ? openCount : ''; el.classList.toggle('alert', openCount>0); }
+}
+
+/* ============================= RENDER: REPORTS ============================= */
+function renderReports(){
+  // Most used spares (sum sparesUsed across events)
+  const usage = {};
+  state.events.forEach(ev=> (ev.sparesUsed||[]).forEach(u=>{ usage[u.spareName]= (usage[u.spareName]||0)+u.qty; }));
+  const usageArr = Object.entries(usage).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const maxU = Math.max(1, ...usageArr.map(a=>a[1]));
+  document.getElementById('topSparesChart').innerHTML = usageArr.length ? usageArr.map(([name,qty])=>
+    '<div class="hbar-row"><div class="hname">'+escapeHtml(name)+'</div><div class="hbar-track"><div class="hbar-fill" style="width:'+(qty/maxU*100)+'%;"></div></div><div class="hbar-n">'+qty+'</div></div>'
+  ).join('') : '<div class="empty-note">No spares usage recorded yet.</div>';
+
+  // Breakdowns by motor
+  const byMotor = {};
+  state.events.forEach(ev=>{ const m=motorById(ev.motorId); const key = m?m.tag:'Unknown'; byMotor[key]=(byMotor[key]||0)+1; });
+  const motorArr = Object.entries(byMotor).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  const maxM = Math.max(1, ...motorArr.map(a=>a[1]));
+  document.getElementById('topMotorsChart').innerHTML = motorArr.length ? motorArr.map(([tag,n])=>
+    '<div class="hbar-row"><div class="hname mono">'+escapeHtml(tag)+'</div><div class="hbar-track"><div class="hbar-fill" style="background:var(--rust); width:'+(n/maxM*100)+'%;"></div></div><div class="hbar-n">'+n+'</div></div>'
+  ).join('') : '<div class="empty-note">No breakdown history yet.</div>';
+
+  // Downtime by department
+  const byDept = {};
+  state.events.forEach(ev=>{ const m=motorById(ev.motorId); const key = m?m.department:'Unknown'; byDept[key]=(byDept[key]||0)+downtimeHoursOf(ev); });
+  const deptArr = Object.entries(byDept).sort((a,b)=>b[1]-a[1]);
+  const maxD = Math.max(1, ...deptArr.map(a=>a[1]));
+  document.getElementById('deptDowntimeChart').innerHTML = deptArr.length ? deptArr.map(([dept,h])=>
+    '<div class="hbar-row"><div class="hname">'+escapeHtml(dept)+'</div><div class="hbar-track"><div class="hbar-fill" style="background:var(--steel); width:'+(h/maxD*100)+'%;"></div></div><div class="hbar-n">'+h.toFixed(0)+'h</div></div>'
+  ).join('') : '<div class="empty-note">No downtime recorded yet.</div>';
+
+  const totalDown = state.events.reduce((a,e)=>a+downtimeHoursOf(e),0);
+  const resolvedCount = state.events.filter(e=>e.stage==='resolved').length;
+  const totalSparesCost = state.events.reduce((a,e)=> a + (e.sparesUsed||[]).reduce((b,u)=>{ const sp=spareById(u.spareId); return b + (sp?sp.unitCost*u.qty:0); },0), 0);
+  document.getElementById('reportSummary').innerHTML = [
+    ['Total events logged', state.events.length],
+    ['Resolved', resolvedCount],
+    ['Total downtime (all time)', totalDown.toFixed(0)+' hrs'],
+    ['Estimated spares cost used', fmtMoney(totalSparesCost)],
+    ['Motors tracked', state.motors.length],
+    ['Spare part lines', state.spares.length],
+  ].map(([k,v])=>'<div><span class="k">'+k+'</span><span class="v">'+v+'</span></div>').join('');
+
+  renderReliabilityTable();
+  renderRecentActivity();
+}
+
+function renderReliabilityTable(){
+  const el = document.getElementById('reliabilityTable');
+  if(!el) return;
+  const rows = state.motors.map(m=>{
+    const hist = state.events.filter(e=>e.motorId===m.id).sort((a,b)=>new Date(a.reportedAt)-new Date(b.reportedAt));
+    const resolved = hist.filter(e=>e.downtimeHours!=null);
+    const mttr = resolved.length ? resolved.reduce((a,e)=>a+e.downtimeHours,0)/resolved.length : null;
+    let mtbf = null;
+    if(hist.length>=2){
+      const gaps = [];
+      for(let i=1;i<hist.length;i++) gaps.push((new Date(hist[i].reportedAt)-new Date(hist[i-1].reportedAt))/3600000);
+      mtbf = gaps.reduce((a,g)=>a+g,0)/gaps.length;
+    }
+    return {tag:m.tag, name:m.name, count:hist.length, mttr, mtbf};
+  }).filter(r=>r.count>0).sort((a,b)=> (a.mtbf==null?Infinity:a.mtbf) - (b.mtbf==null?Infinity:b.mtbf));
+  const fmtHrs = h => h==null ? '—' : (h>=48 ? (h/24).toFixed(1)+'d' : h.toFixed(1)+'h');
+  el.innerHTML = rows.length ? '<div class="table-wrap"><table><thead><tr><th>Motor</th><th>Breakdowns</th><th>MTTR</th><th>MTBF</th></tr></thead><tbody>'+
+    rows.map(r=>'<tr><td class="mono" style="color:var(--wheat);">'+escapeHtml(r.tag)+'<div class="cell-sub" style="color:var(--text-faint);">'+escapeHtml(r.name)+'</div></td><td class="num">'+r.count+'</td><td class="num">'+fmtHrs(r.mttr)+'</td><td class="num">'+fmtHrs(r.mtbf)+'</td></tr>').join('')+
+    '</tbody></table></div>' : '<div class="empty-note">No breakdown history yet.</div>';
+}
+
+function renderRecentActivity(){
+  const el = document.getElementById('recentActivityLog');
+  if(!el) return;
+  apiFetch('/api/audit?limit=20').then(rows=>{
+    el.innerHTML = rows.length ? rows.map(a=>'<div class="row-item" style="padding:9px 16px;"><div class="main-txt"><div class="t1">'+escapeHtml(a.summary||a.action)+'</div><div class="t2">'+escapeHtml(a.entity_type)+(a.entity_label?' · '+escapeHtml(a.entity_label):'')+'</div></div><span class="side">'+escapeHtml(a.user_name)+'<br>'+fmtDateTime(a.created_at)+'</span></div>').join('')
+      : '<div class="empty-note">No activity recorded yet.</div>';
+  }).catch(()=>{ el.innerHTML = '<div class="empty-note">Could not load activity.</div>'; });
+}
+
+function renderUsers(){
+  if(!currentUser || currentUser.role !== 'admin') return;
+  const tbody = document.getElementById('usersTbody');
+  if(!tbody) return;
+  tbody.innerHTML = state.users.length ? state.users.map(u=>
+    '<tr><td class="cell-title">'+escapeHtml(u.name)+(u.id===currentUser.id?' <span class="cell-sub">(you)</span>':'')+'</td>'+
+    '<td class="mono">'+escapeHtml(u.username)+'</td>'+
+    '<td><span class="badge running">'+u.role+'</span></td>'+
+    '<td>'+escapeHtml(u.phone||'—')+'</td>'+
+    '<td style="font-size:12px;">'+fmtDate(u.created_at)+'</td>'+
+    '<td>'+(u.id!==currentUser.id?'<button class="btn btn-sm btn-danger" data-del-user="'+u.id+'">Remove</button>':'')+'</td></tr>'
+  ).join('') : '<tr><td colspan="6"><div class="empty-note">No accounts yet.</div></td></tr>';
+  document.querySelectorAll('[data-del-user]').forEach(b=> b.onclick = async ()=>{
+    if(confirm('Remove this account? They will no longer be able to sign in.')){
+      await apiFetch('/api/auth/users/'+b.dataset.delUser, {method:'DELETE'});
+      await refreshAll();
+    }
+  });
+}
+
+function renderAll(){
+  if(!dbReady) return;
+  buildNav();
+  renderDashboard();
+  renderMotors();
+  renderSpareMotors();
+  renderUnderRepair();
+  renderSpares();
+  renderEvents();
+  renderReports();
+  renderUsers();
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.view===currentView));
+}
+
+/* ============================= FILTERS WIRE-UP ============================= */
+document.getElementById('motorSearch').addEventListener('input', e=>{ motorFilters.search = e.target.value; renderMotors(); });
+document.getElementById('motorDeptFilter').addEventListener('change', e=>{ motorFilters.dept = e.target.value; renderMotors(); });
+document.getElementById('motorLocTypeFilter').addEventListener('change', e=>{ motorFilters.locType = e.target.value; renderMotors(); });
+document.getElementById('motorKwFilter').addEventListener('input', e=>{ motorFilters.kw = e.target.value; renderMotors(); });
+document.getElementById('motorRpmFilter').addEventListener('input', e=>{ motorFilters.rpm = e.target.value; renderMotors(); });
+document.getElementById('motorVoltFilter').addEventListener('input', e=>{ motorFilters.volt = e.target.value; renderMotors(); });
+document.getElementById('exportMotorsBtn').addEventListener('click', ()=>{
+  exportCsv('motors-'+new Date().toISOString().slice(0,10)+'.csv',
+    ['Tag','Name','Department','kW','Voltage','RPM','Status','Spare category','Location type','Placement','Condition'],
+    lastMotorsList.map(m=>[m.tag,m.name,m.department,m.kw,m.voltage,m.rpm,computeMotorStatus(m),m.standbyCategory||'',m.locationType,m.placementDetail,m.condition]));
+});
+document.getElementById('exportUnderRepairBtn').addEventListener('click', ()=>{
+  exportCsv('under-repair-'+new Date().toISOString().slice(0,10)+'.csv',
+    ['Tag','Name','Department','Workshop','Location detail','Since','Hours since','Reason','Via breakdown ticket'],
+    lastUnderRepairList.map(m=>{ const info=getUnderRepairInfo(m); return [m.tag,m.name,m.department,info.workshop||'Unspecified',info.detail,info.since,info.hoursSince.toFixed(1),info.reason,info.viaBreakdown?'Yes':'No']; }));
+});
+document.getElementById('motorsBulkDeleteBtn').addEventListener('click', async ()=>{
+  const ids = Array.from(selection.motors);
+  if(!ids.length) return;
+  if(!confirm('Delete '+ids.length+' motor(s)? Any breakdown history for them will be deleted too. This cannot be undone.')) return;
+  try{
+    await apiFetch('/api/motors/bulk-delete', {method:'POST', body:JSON.stringify({ids})});
+    selection.motors.clear();
+    await refreshAll();
+  }catch(e){ alert(e.message); }
+});
+document.getElementById('motorsBulkClearBtn').addEventListener('click', ()=>{ selection.motors.clear(); renderMotors(); });
+document.getElementById('motorStatusFilter').addEventListener('click', e=>{
+  const chip = e.target.closest('.chip'); if(!chip) return;
+  document.querySelectorAll('#motorStatusFilter .chip').forEach(c=>c.classList.remove('active'));
+  chip.classList.add('active'); motorFilters.status = chip.dataset.status; renderMotors();
+});
+document.getElementById('spareSearch').addEventListener('input', e=>{ spareFilters.search = e.target.value; renderSpares(); });
+document.getElementById('spareCatFilter').addEventListener('change', e=>{ spareFilters.cat = e.target.value; renderSpares(); });
+document.querySelector('#view-spares .chip-filters').addEventListener('click', e=>{
+  const chip = e.target.closest('.chip'); if(!chip) return;
+  document.querySelectorAll('#view-spares .chip-filters .chip').forEach(c=>c.classList.remove('active'));
+  chip.classList.add('active'); spareFilters.low = chip.dataset.low; renderSpares();
+});
+document.getElementById('eventStageFilter').addEventListener('click', e=>{
+  const chip = e.target.closest('.chip'); if(!chip) return;
+  document.querySelectorAll('#eventStageFilter .chip').forEach(c=>c.classList.remove('active'));
+  chip.classList.add('active'); eventStageFilter = chip.dataset.stage; renderEvents();
+});
+document.getElementById('eventSearch').addEventListener('input', e=>{ eventSearch = e.target.value; renderEvents(); });
+
+document.getElementById('exportSparesBtn').addEventListener('click', ()=>{
+  exportCsv('spares-'+new Date().toISOString().slice(0,10)+'.csv',
+    ['Name','Part number','Category','Qty','Min qty','Unit cost','Location','Supplier'],
+    lastSparesList.map(s=>[s.name,s.partNumber,s.category,s.qty,s.minQty,s.unitCost,s.location,s.supplier]));
+});
+document.getElementById('sparesBulkDeleteBtn').addEventListener('click', async ()=>{
+  const ids = Array.from(selection.spares);
+  if(!ids.length) return;
+  if(!confirm('Delete '+ids.length+' spare(s)? This cannot be undone.')) return;
+  try{
+    await apiFetch('/api/spares/bulk-delete', {method:'POST', body:JSON.stringify({ids})});
+    selection.spares.clear();
+    await refreshAll();
+  }catch(e){ alert(e.message); }
+});
+document.getElementById('sparesBulkClearBtn').addEventListener('click', ()=>{ selection.spares.clear(); renderSpares(); });
+
+document.getElementById('exportEventsBtn').addEventListener('click', ()=>{
+  exportCsv('breakdowns-'+new Date().toISOString().slice(0,10)+'.csv',
+    ['Motor tag','Motor name','Reported at','Reported by','Description','Urgency','Stage','Repair location','Downtime hours','Resolved at'],
+    lastEventsList.map(ev=>{ const m=motorById(ev.motorId); return [m?m.tag:'',m?m.name:'',ev.reportedAt,ev.reportedBy,ev.description,ev.urgency,ev.stage,ev.repairLocation,downtimeHoursOf(ev).toFixed(1),ev.resolvedAt||'']; }));
+});
+document.getElementById('eventsBulkDeleteBtn').addEventListener('click', async ()=>{
+  const ids = Array.from(selection.events);
+  if(!ids.length) return;
+  if(!confirm('Delete '+ids.length+' breakdown record(s)? This cannot be undone.')) return;
+  try{
+    await apiFetch('/api/events/bulk-delete', {method:'POST', body:JSON.stringify({ids})});
+    selection.events.clear();
+    await refreshAll();
+  }catch(e){ alert(e.message); }
+});
+document.getElementById('eventsBulkClearBtn').addEventListener('click', ()=>{ selection.events.clear(); renderEvents(); });
+
+/* ============================= MODALS: MOTOR ============================= */
+function openModal(html){ document.getElementById('modalMount').innerHTML = html; document.getElementById('modalOverlay').classList.add('open'); }
+function closeModal(){ document.getElementById('modalOverlay').classList.remove('open'); document.getElementById('modalMount').innerHTML=''; }
+document.getElementById('modalOverlay').addEventListener('click', e=>{ if(e.target.id==='modalOverlay') closeModal(); });
+
+function openMotorModal(id){
+  const m = id ? motorById(id) : null;
+  const depts = ['Cleaning','Milling','Sifting','Conveying','Packing','Utilities'];
+  const locTypes = ['Mill floor','Internal workshop','External workshop','Container','Store','Vendor','Other'];
+  openModal(
+    '<div class="modal-head"><h3>'+(m?'Edit motor':'Add motor')+'</h3><button class="modal-close" id="mClose">×</button></div>'+
+    '<div class="modal-body">'+
+      '<div class="grid2"><div class="field"><label>Tag / asset ID *</label><input id="f-tag" value="'+(m?escapeHtml(m.tag):'')+'" placeholder="e.g. RM-03"></div>'+
+      '<div class="field"><label>Department</label><select id="f-dept">'+depts.map(d=>'<option '+(m&&m.department===d?'selected':'')+'>'+d+'</option>').join('')+'</select></div></div>'+
+      '<div class="field"><label>Name / description *</label><input id="f-name" value="'+(m?escapeHtml(m.name):'')+'" placeholder="e.g. Roller Mill 3 Main Drive"></div>'+
+      '<div class="grid3"><div class="field"><label>kW</label><input id="f-kw" type="number" step="0.1" value="'+(m?m.kw:'')+'"></div>'+
+      '<div class="field"><label>Voltage</label><input id="f-volt" type="number" value="'+(m?m.voltage:415)+'"></div>'+
+      '<div class="field"><label>RPM</label><input id="f-rpm" type="number" value="'+(m?m.rpm:1450)+'"></div></div>'+
+      '<div class="field"><label>Status (when no open breakdown ticket)</label><select id="f-status">'+
+        '<option value="running" '+(m&&m.manualStatus==='running'?'selected':'')+'>Running</option>'+
+        '<option value="standby" '+(m&&m.manualStatus==='standby'?'selected':'')+'>Standby (spare, available)</option>'+
+        '<option value="repair" '+(m&&m.manualStatus==='repair'?'selected':'')+'>Under repair</option>'+
+        '<option value="decommissioned" '+(m&&m.manualStatus==='decommissioned'?'selected':'')+'>Decommissioned</option>'+
+      '</select></div>'+
+      '<div class="field" id="f-standbyCatWrap" style="display:'+(m&&m.manualStatus==='standby'?'block':'none')+';"><label>Spare category</label><select id="f-standbyCat"><option value="new" '+(m&&m.standbyCategory==='new'?'selected':'')+'>New — never installed, bought as spare</option><option value="repaired" '+(m&&m.standbyCategory==='repaired'?'selected':'')+'>Repaired — fixed, standing by in workshop</option></select></div>'+
+      '<div class="grid2"><div class="field"><label>Location</label><select id="f-loctype">'+locTypes.map(t=>'<option '+(m&&m.locationType===t?'selected':(!m&&t==='Mill floor'?'selected':''))+'>'+t+'</option>').join('')+'</select></div>'+
+      '<div class="field"><label>Actual placement</label><input id="f-placement" value="'+(m?escapeHtml(m.placementDetail||''):'')+'" placeholder="e.g. Bay 3, Container 2, Rack 5"></div></div>'+
+      '<div class="field"><label>Condition notes</label><textarea id="f-cond" rows="2" placeholder="e.g. Good / bearing noise / due for service">'+(m?escapeHtml(m.condition||''):'')+'</textarea></div>'+
+    '</div>'+
+    '<div class="modal-foot">'+
+      (m?'<button class="btn btn-danger" id="mDelete" style="margin-right:auto;">Delete</button>':'')+
+      '<button class="btn" id="mCancel">Cancel</button><button class="btn btn-primary" id="mSave">'+(m?'Save changes':'Add motor')+'</button>'+
+    '</div>'
+  );
+  document.getElementById('mClose').onclick = closeModal;
+  document.getElementById('mCancel').onclick = closeModal;
+  document.getElementById('f-status').addEventListener('change', (e)=>{
+    document.getElementById('f-standbyCatWrap').style.display = e.target.value==='standby' ? 'block' : 'none';
+    if(e.target.value==='repair'){
+      const loc = document.getElementById('f-loctype');
+      if(loc.value!=='Internal workshop' && loc.value!=='External workshop') loc.value = 'Internal workshop';
+    }
+  });
+  if(m) document.getElementById('mDelete').onclick = async ()=>{ if(confirm('Delete '+m.tag+'? Any breakdown history for it will be deleted too. This cannot be undone.')){ await docDelete('motors', m.id); closeModal(); } };
+  document.getElementById('mSave').onclick = async ()=>{
+    if(!requireFields([['f-tag','Tag / asset ID'],['f-name','Name / description']])) return;
+    const data = {
+      tag: document.getElementById('f-tag').value.trim() || 'UNTAGGED',
+      department: document.getElementById('f-dept').value,
+      name: document.getElementById('f-name').value.trim() || 'Unnamed motor',
+      kw: parseFloat(document.getElementById('f-kw').value)||0,
+      voltage: parseInt(document.getElementById('f-volt').value)||0,
+      rpm: parseInt(document.getElementById('f-rpm').value)||0,
+      manualStatus: document.getElementById('f-status').value,
+      standbyCategory: document.getElementById('f-standbyCat').value,
+      locationType: document.getElementById('f-loctype').value,
+      placementDetail: document.getElementById('f-placement').value.trim(),
+      condition: document.getElementById('f-cond').value.trim(),
+    };
+    try{
+      if(m) await docUpdate('motors', m.id, data);
+      else { await colAdd('motors', data); }
+      closeModal();
+    }catch(e){ alert(e.message); }
+  };
+}
+document.getElementById('addMotorBtn').addEventListener('click', ()=>openMotorModal(null));
+
+/* ============================= BULK ADD: MOTORS ============================= */
+function openBulkMotorModal(){
+  openModal(
+    '<div class="modal-head"><h3>Bulk add motors</h3><button class="modal-close" id="bmClose">×</button></div>'+
+    '<div class="modal-body">'+
+      '<p style="font-size:12.5px; color:var(--text-dim); margin-top:0;">Paste one motor per line. Works straight from an Excel/Google Sheets column selection (tab-separated), or comma-separated. Order: <b>Tag, Name, Department, kW, Voltage, RPM, Location type, Placement, Condition</b>. Location type must be one of: Mill floor, Workshop, Container, Store, Vendor, Other. Only Tag and Name are required.</p>'+
+      '<div class="field"><textarea id="bm-text" rows="10" placeholder="RM-03, Roller Mill 3 Main Drive, Milling, 55, 415, 1450, Mill floor, Bay 3, Good\nSIFT-02, Plansifter 2 Drive, Sifting, 11, 415, 960, Workshop, Bay 1, Good"></textarea></div>'+
+      '<div id="bm-preview" style="font-size:12px; color:var(--text-faint);"></div>'+
+    '</div>'+
+    '<div class="modal-foot"><button class="btn" id="bmCancel">Cancel</button><button class="btn btn-primary" id="bmSave">Add motors</button></div>'
+  );
+  const ta = document.getElementById('bm-text');
+  const preview = document.getElementById('bm-preview');
+  function parseLines(){
+    return ta.value.split('\n').map(l=>l.trim()).filter(Boolean).map(line=>{
+      const parts = line.includes('\t') ? line.split('\t') : line.split(',');
+      return parts.map(p=>p.trim());
+    }).filter(parts=>parts[0]);
+  }
+  ta.addEventListener('input', ()=>{ const rows = parseLines(); preview.textContent = rows.length + ' motor' + (rows.length===1?'':'s') + ' ready to add.'; });
+  document.getElementById('bmClose').onclick = closeModal;
+  document.getElementById('bmCancel').onclick = closeModal;
+  document.getElementById('bmSave').onclick = async ()=>{
+    const rows = parseLines();
+    if(!rows.length){ closeModal(); return; }
+    const btn = document.getElementById('bmSave'); btn.disabled = true; btn.textContent = 'Adding…';
+    const validLocTypes = ['Mill floor','Internal workshop','External workshop','Container','Store','Vendor','Other'];
+    const payload = rows.map(r=>{
+      const [tag,name,department,kw,voltage,rpm,locationType,placementDetail,condition] = r;
+      return { tag: tag||'UNTAGGED', name: name||tag||'Unnamed motor', department: department||'Milling',
+        kw: parseFloat(kw)||0, voltage: parseInt(voltage)||415, rpm: parseInt(rpm)||1450,
+        locationType: validLocTypes.includes(locationType) ? locationType : 'Mill floor',
+        placementDetail: placementDetail||'', condition: condition||'' };
+    });
+    try{ await bulkAddMotors(payload); }catch(e){ alert(e.message); }
+    closeModal();
+  };
+}
+document.getElementById('bulkMotorBtn').addEventListener('click', openBulkMotorModal);
+
+/* ============================= SPARE MOTORS: add / bulk / import / export ============================= */
+document.getElementById('addSpareMotorBtn').addEventListener('click', ()=>{
+  openMotorModal(null);
+  setTimeout(()=>{
+    const statusEl = document.getElementById('f-status');
+    if(statusEl){ statusEl.value = 'standby'; statusEl.dispatchEvent(new Event('change')); }
+  }, 0);
+});
+
+function openBulkSpareMotorModal(prefill){
+  openModal(
+    '<div class="modal-head"><h3>Bulk add spare motors</h3><button class="modal-close" id="bsmClose">×</button></div>'+
+    '<div class="modal-body">'+
+      '<p style="font-size:12.5px; color:var(--text-dim); margin-top:0;">Paste one motor per line, or import a CSV. Order: <b>Tag, Name, Department, kW, Voltage, RPM, Category, Location type, Placement, Condition</b>. Category must be "new" or "repaired". Location type: Internal workshop, External workshop, Container, or Store. Only Tag and Name are required. All rows are added as Standby.</p>'+
+      '<div class="field"><textarea id="bsm-text" rows="10" placeholder="CONV-04, Screw Conveyor Spare, Conveying, 5.5, 415, 1440, new, Store, Rack 4, New unused\nSIFT-03, Plansifter Spare, Sifting, 11, 415, 960, repaired, Internal workshop, Bay 2, Rewound and tested">'+(prefill||'')+'</textarea></div>'+
+      '<div id="bsm-preview" style="font-size:12px; color:var(--text-faint);"></div>'+
+    '</div>'+
+    '<div class="modal-foot"><button class="btn" id="bsmCancel">Cancel</button><button class="btn btn-primary" id="bsmSave">Add spare motors</button></div>'
+  );
+  const ta = document.getElementById('bsm-text');
+  const preview = document.getElementById('bsm-preview');
+  function parseLines(){
+    return ta.value.split('\n').map(l=>l.trim()).filter(Boolean).map(line=>{
+      const parts = line.includes('\t') ? line.split('\t') : line.split(',');
+      return parts.map(p=>p.trim());
+    }).filter(parts=>parts[0]);
+  }
+  function updatePreview(){ const rows = parseLines(); preview.textContent = rows.length + ' spare motor' + (rows.length===1?'':'s') + ' ready to add.'; }
+  ta.addEventListener('input', updatePreview);
+  updatePreview();
+  document.getElementById('bsmClose').onclick = closeModal;
+  document.getElementById('bsmCancel').onclick = closeModal;
+  document.getElementById('bsmSave').onclick = async ()=>{
+    const rows = parseLines();
+    if(!rows.length){ closeModal(); return; }
+    const btn = document.getElementById('bsmSave'); btn.disabled = true; btn.textContent = 'Adding…';
+    const validLocTypes = ['Internal workshop','External workshop','Container','Store','Vendor','Other','Mill floor'];
+    const payload = rows.map(r=>{
+      const [tag,name,department,kw,voltage,rpm,category,locationType,placementDetail,condition] = r;
+      return { tag: tag||'UNTAGGED', name: name||tag||'Unnamed motor', department: department||'Milling',
+        kw: parseFloat(kw)||0, voltage: parseInt(voltage)||415, rpm: parseInt(rpm)||1450,
+        manualStatus: 'standby', standbyCategory: (category||'').toLowerCase()==='repaired' ? 'repaired' : 'new',
+        locationType: validLocTypes.includes(locationType) ? locationType : 'Store',
+        placementDetail: placementDetail||'', condition: condition||'' };
+    });
+    try{
+      const res = await apiFetch('/api/motors/bulk', {method:'POST', body:JSON.stringify({motors:payload})});
+      await refreshAll();
+      if(res.skipped && res.skipped.length) alert('Added '+res.added+'. Skipped '+res.skipped.length+' duplicate tag(s): '+res.skipped.join(', '));
+    }catch(e){ alert(e.message); }
+    closeModal();
+  };
+}
+document.getElementById('bulkSpareMotorBtn').addEventListener('click', ()=>openBulkSpareMotorModal());
+
+document.getElementById('exportSpareMotorsBtn').addEventListener('click', ()=>{
+  const standby = state.motors.filter(m=>computeMotorStatus(m)==='standby');
+  exportCsv('spare-motors-'+new Date().toISOString().slice(0,10)+'.csv',
+    ['Tag','Name','Department','kW','Voltage','RPM','Category','Location type','Placement','Condition'],
+    standby.map(m=>[m.tag,m.name,m.department,m.kw,m.voltage,m.rpm,m.standbyCategory,m.locationType,m.placementDetail,m.condition]));
+});
+
+// CSV import: read the file, drop the header row, and drop the text
+// straight into the matching bulk-add modal so the person can review the
+// count before confirming — same validation and duplicate-tag handling as
+// pasting text by hand.
+/** Proper CSV line parser — handles quoted fields (with embedded commas)
+ * and doubled-quote escaping, so re-importing an exported CSV (or any
+ * Excel-saved CSV) doesn't leave literal quote marks in the data. */
+function parseCsvLine(line){
+  const cells = [];
+  let cur = '', inQuotes = false;
+  for(let i=0;i<line.length;i++){
+    const c = line[i];
+    if(inQuotes){
+      if(c==='"'){ if(line[i+1]==='"'){ cur+='"'; i++; } else { inQuotes=false; } }
+      else cur+=c;
+    } else {
+      if(c==='"') inQuotes=true;
+      else if(c===','){ cells.push(cur); cur=''; }
+      else cur+=c;
+    }
+  }
+  cells.push(cur);
+  return cells.map(s=>s.trim());
+}
+function wireCsvImport(buttonId, fileInputId, openBulkFn){
+  document.getElementById(buttonId).addEventListener('click', ()=> document.getElementById(fileInputId).click());
+  document.getElementById(fileInputId).addEventListener('change', async (e)=>{
+    const file = e.target.files[0]; if(!file) return;
+    const text = await file.text();
+    let lines = text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+    if(lines.length && /[a-zA-Z]/.test(lines[0]) && /tag|name|department/i.test(lines[0])) lines.shift(); // drop a header row if present
+    const cleaned = lines.map(line => parseCsvLine(line).join(', ')); // strips quote wrappers, rejoins as plain comma-separated
+    openBulkFn(cleaned.join('\n'));
+    e.target.value = '';
+  });
+}
+wireCsvImport('importMotorsBtn', 'importMotorsFile', (text)=>{ openBulkMotorModal(); setTimeout(()=>{ const ta=document.getElementById('bm-text'); if(ta){ ta.value=text; ta.dispatchEvent(new Event('input')); } },0); });
+wireCsvImport('importSpareMotorsBtn', 'importSpareMotorsFile', (text)=>{ openBulkSpareMotorModal(text); });
+
+/* ============================= MODALS: SPARE ============================= */
+function openSpareModal(id){
+  const s = id ? spareById(id) : null;
+  const cats = ['Bearing','Belt','Electrical','Winding','Seal','Other'];
+  openModal(
+    '<div class="modal-head"><h3>'+(s?'Edit spare':'Add spare')+'</h3><button class="modal-close" id="sClose">×</button></div>'+
+    '<div class="modal-body">'+
+      '<div class="field"><label>Part name *</label><input id="s-name" value="'+(s?escapeHtml(s.name):'')+'" placeholder="e.g. Deep groove ball bearing 6308 ZZ"></div>'+
+      '<div class="grid2"><div class="field"><label>Part number</label><input id="s-pn" value="'+(s?escapeHtml(s.partNumber||''):'')+'"></div>'+
+      '<div class="field"><label>Category</label><select id="s-cat">'+cats.map(c=>'<option '+(s&&s.category===c?'selected':'')+'>'+c+'</option>').join('')+'</select></div></div>'+
+      '<div class="grid3"><div class="field"><label>Qty in stock</label><input id="s-qty" type="number" value="'+(s?s.qty:0)+'"></div>'+
+      '<div class="field"><label>Min (reorder) level</label><input id="s-min" type="number" value="'+(s?s.minQty:0)+'"></div>'+
+      '<div class="field"><label>Unit cost (₦)</label><input id="s-cost" type="number" value="'+(s?s.unitCost:0)+'"></div></div>'+
+      '<div class="field"><label>Store location</label><input id="s-loc" value="'+(s?escapeHtml(s.location||''):'')+'" placeholder="e.g. Store A — Rack 2, Bin 5"></div>'+
+      '<div class="field"><label>Supplier</label><input id="s-sup" value="'+(s?escapeHtml(s.supplier||''):'')+'"></div>'+
+      (s?'<div class="field"><label>Quick stock adjustment</label><div style="display:flex; gap:8px;"><input id="s-adj" type="number" placeholder="e.g. +10 or -2" style="flex:1;"><button class="btn btn-sm" id="s-adjBtn">Apply</button></div></div>':'')+
+      (s?'<div class="field"><label>Change history — who, what, when</label><div class="timeline" id="sAuditLog" style="max-height:180px; overflow-y:auto;"><div class="empty-note" style="padding:8px 0;">Loading…</div></div></div>':'')+
+    '</div>'+
+    '<div class="modal-foot">'+
+      (s?'<button class="btn btn-danger" id="sDelete" style="margin-right:auto;">Delete</button>':'')+
+      '<button class="btn" id="sCancel">Cancel</button><button class="btn btn-primary" id="sSave">'+(s?'Save changes':'Add spare')+'</button>'+
+    '</div>'
+  );
+  document.getElementById('sClose').onclick = closeModal;
+  document.getElementById('sCancel').onclick = closeModal;
+  if(s){
+    document.getElementById('sDelete').onclick = async ()=>{ if(confirm('Delete '+s.name+'?')){ await docDelete('spares', s.id); closeModal(); } };
+    document.getElementById('s-adjBtn').onclick = async ()=>{
+      const v = parseInt(document.getElementById('s-adj').value);
+      if(!v) return;
+      await adjustSpare(s.id, v);
+      closeModal();
+    };
+    apiFetch('/api/audit?entityType=spares&entityId='+s.id+'&limit=25').then(rows=>{
+      const el = document.getElementById('sAuditLog');
+      if(!el) return;
+      el.innerHTML = rows.length ? rows.map(a=>'<div class="tl-item"><div class="tl-dot"></div><div><div class="tl-time">'+fmtDateTime(a.created_at)+' · '+escapeHtml(a.user_name)+'</div><div>'+escapeHtml(a.summary||a.action)+'</div></div></div>').join('')
+        : '<div class="empty-note" style="padding:8px 0;">No changes recorded yet.</div>';
+    }).catch(()=>{ const el=document.getElementById('sAuditLog'); if(el) el.innerHTML = '<div class="empty-note" style="padding:8px 0;">Could not load history.</div>'; });
+  }
+  document.getElementById('sSave').onclick = async ()=>{
+    if(!requireFields([['s-name','Part name']])) return;
+    const data = {
+      name: document.getElementById('s-name').value.trim() || 'Unnamed part',
+      partNumber: document.getElementById('s-pn').value.trim(),
+      category: document.getElementById('s-cat').value,
+      qty: Math.max(0, parseInt(document.getElementById('s-qty').value)||0),
+      minQty: Math.max(0, parseInt(document.getElementById('s-min').value)||0),
+      unitCost: parseFloat(document.getElementById('s-cost').value)||0,
+      location: document.getElementById('s-loc').value.trim(),
+      supplier: document.getElementById('s-sup').value.trim(),
+      updatedAt: new Date().toISOString(),
+    };
+    if(s) await docUpdate('spares', s.id, data);
+    else { data.createdAt = new Date().toISOString(); data.compatibleMotorIds = []; await colAdd('spares', data); }
+    closeModal();
+  };
+}
+document.getElementById('addSpareBtn').addEventListener('click', ()=>openSpareModal(null));
+
+/* ============================= BULK ADD: SPARES ============================= */
+function openBulkSpareModal(){
+  openModal(
+    '<div class="modal-head"><h3>Bulk add spares</h3><button class="modal-close" id="bsClose">×</button></div>'+
+    '<div class="modal-body">'+
+      '<p style="font-size:12.5px; color:var(--text-dim); margin-top:0;">Paste one spare per line — tab-separated (straight from Excel) or comma-separated. Order: <b>Name, Part number, Category, Qty, Min qty, Unit cost, Location, Supplier</b>. Only Name is required.</p>'+
+      '<div class="field"><textarea id="bs-text" rows="10" placeholder="Bearing 6308 ZZ, BRG-6308ZZ, Bearing, 4, 6, 8500, Store A — Rack 2 Bin 5, Kano Bearings Ltd\nV-belt A-Section 112in, BLT-A112, Belt, 5, 4, 4200, Store A — Rack 4 Bin 1, Belting Nigeria"></textarea></div>'+
+      '<div id="bs-preview" style="font-size:12px; color:var(--text-faint);"></div>'+
+    '</div>'+
+    '<div class="modal-foot"><button class="btn" id="bsCancel">Cancel</button><button class="btn btn-primary" id="bsSave">Add spares</button></div>'
+  );
+  const ta = document.getElementById('bs-text');
+  const preview = document.getElementById('bs-preview');
+  function parseLines(){
+    return ta.value.split('\n').map(l=>l.trim()).filter(Boolean).map(line=>{
+      const parts = line.includes('\t') ? line.split('\t') : line.split(',');
+      return parts.map(p=>p.trim());
+    }).filter(parts=>parts[0]);
+  }
+  ta.addEventListener('input', ()=>{ const rows = parseLines(); preview.textContent = rows.length + ' spare' + (rows.length===1?'':'s') + ' ready to add.'; });
+  document.getElementById('bsClose').onclick = closeModal;
+  document.getElementById('bsCancel').onclick = closeModal;
+  document.getElementById('bsSave').onclick = async ()=>{
+    const rows = parseLines();
+    if(!rows.length){ closeModal(); return; }
+    const btn = document.getElementById('bsSave'); btn.disabled = true; btn.textContent = 'Adding…';
+    const payload = rows.map(r=>{
+      const [name,partNumber,category,qty,minQty,unitCost,location,supplier] = r;
+      return { name: name||'Unnamed part', partNumber: partNumber||'', category: category||'Other',
+        qty: Math.max(0, parseInt(qty)||0), minQty: Math.max(0, parseInt(minQty)||0),
+        unitCost: parseFloat(unitCost)||0, location: location||'', supplier: supplier||'' };
+    });
+    try{ await bulkAddSpares(payload); }catch(e){ alert(e.message); }
+    closeModal();
+  };
+}
+document.getElementById('bulkSpareBtn').addEventListener('click', openBulkSpareModal);
+
+/* ============================= MODALS: ADD STAFF ACCOUNT ============================= */
+function openUserModal(){
+  openModal(
+    '<div class="modal-head"><h3>Add staff account</h3><button class="modal-close" id="uClose">×</button></div>'+
+    '<div class="modal-body">'+
+      '<div class="field"><label>Full name</label><input id="u-name" placeholder="e.g. Musa Ibrahim"></div>'+
+      '<div class="grid2"><div class="field"><label>Username</label><input id="u-username" placeholder="e.g. musa.i"></div>'+
+      '<div class="field"><label>Temporary password</label><input id="u-pass" type="text" placeholder="At least 6 characters"></div></div>'+
+      '<div class="grid2"><div class="field"><label>Role</label><select id="u-role">'+
+        '<option value="technician">Technician — manages motors &amp; repairs</option>'+
+        '<option value="storekeeper">Storekeeper — manages spares</option>'+
+        '<option value="admin">Admin — full access</option>'+
+      '</select></div>'+
+      '<div class="field"><label>Phone (for SMS alerts)</label><input id="u-phone" placeholder="e.g. 2348012345678"></div></div>'+
+    '</div>'+
+    '<div class="modal-foot"><button class="btn" id="uCancel">Cancel</button><button class="btn btn-primary" id="uSave">Create account</button></div>'
+  );
+  document.getElementById('uClose').onclick = closeModal;
+  document.getElementById('uCancel').onclick = closeModal;
+  document.getElementById('uSave').onclick = async ()=>{
+    const body = {
+      name: document.getElementById('u-name').value.trim(),
+      username: document.getElementById('u-username').value.trim(),
+      password: document.getElementById('u-pass').value,
+      role: document.getElementById('u-role').value,
+      phone: document.getElementById('u-phone').value.trim(),
+    };
+    if(!body.name || !body.username || !body.password){ alert('Name, username and password are required.'); return; }
+    try{
+      await apiFetch('/api/auth/users', {method:'POST', body:JSON.stringify(body)});
+      await refreshAll();
+      closeModal();
+    }catch(e){ alert(e.message); }
+  };
+}
+document.getElementById('addUserBtn').addEventListener('click', openUserModal);
+document.getElementById('printReportBtn').addEventListener('click', ()=> window.print());
+
+/* ============================= BACKUP / RESTORE ============================= */
+const downloadBackupBtn = document.getElementById('downloadBackupBtn');
+if(downloadBackupBtn){
+  downloadBackupBtn.addEventListener('click', async ()=>{
+    const status = document.getElementById('backupStatus');
+    status.textContent = 'Preparing backup…';
+    try{
+      const resp = await fetch('/api/backup/export', {headers:{'Authorization':'Bearer '+authToken}});
+      if(!resp.ok) throw new Error('Could not create backup.');
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'motortrack-backup-'+new Date().toISOString().slice(0,10)+'.json';
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+      status.textContent = 'Backup downloaded ✓ ' + new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    }catch(e){ status.textContent = 'Backup failed: ' + e.message; }
+  });
+}
+const restoreBackupBtn = document.getElementById('restoreBackupBtn');
+if(restoreBackupBtn){
+  restoreBackupBtn.addEventListener('click', ()=> document.getElementById('restoreFileInput').click());
+  document.getElementById('restoreFileInput').addEventListener('change', async (e)=>{
+    const file = e.target.files[0]; if(!file) return;
+    const status = document.getElementById('backupStatus');
+    if(!confirm('This will REPLACE all current motors, spares, breakdowns, and staff accounts with the contents of this backup file. Continue?')){
+      e.target.value = ''; return;
+    }
+    status.textContent = 'Restoring…';
+    try{
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      const res = await apiFetch('/api/backup/import', {method:'POST', body:JSON.stringify(parsed)});
+      status.textContent = 'Restored ✓ '+res.restored.motors+' motors, '+res.restored.spares+' spares, '+res.restored.events+' events.';
+      alert('Restore complete. You may need to sign in again.');
+      await refreshAll();
+    }catch(err){ status.textContent = 'Restore failed: ' + err.message; }
+    e.target.value = '';
+  });
+}
+
+/* ============================= MODALS: REPORT BREAKDOWN ============================= */
+function openEventModal(){
+  const runningMotors = state.motors.filter(m=>computeMotorStatus(m)==='running');
+  if(!runningMotors.length){ alert('No running motors available to report a breakdown on. (Motors on standby, decommissioned, or already broken down/under repair are not shown here.)'); return; }
+  const motorOpts = runningMotors.slice().sort((a,b)=>a.tag.localeCompare(b.tag))
+    .map(m=>'<option value="'+m.id+'">'+escapeHtml(m.tag)+' — '+escapeHtml(m.name)+'</option>').join('');
+  openModal(
+    '<div class="modal-head"><h3>Report a breakdown</h3><button class="modal-close" id="eClose">×</button></div>'+
+    '<div class="modal-body">'+
+      '<p style="font-size:11.5px; color:var(--text-faint); margin-top:0;">Only motors currently running are listed — a motor on standby, decommissioned, or already down can\'t break down again.</p>'+
+      '<div class="field"><label>Motor</label><select id="e-motor">'+motorOpts+'</select></div>'+
+      '<div class="field"><label>What happened *</label><textarea id="e-desc" rows="3" placeholder="e.g. Tripping on overload, unusual noise from bearing…"></textarea></div>'+
+      '<div class="grid2"><div class="field"><label>Urgency</label><select id="e-urg"><option value="high">High — line stopped</option><option value="medium" selected>Medium</option><option value="low">Low</option></select></div>'+
+      '<div class="field"><label>Reported by</label><input id="e-by" placeholder="Your name"></div></div>'+
+    '</div>'+
+    '<div class="modal-foot"><button class="btn" id="eCancel">Cancel</button><button class="btn btn-primary" id="eSave">Log breakdown</button></div>'
+  );
+  document.getElementById('eClose').onclick = closeModal;
+  document.getElementById('eCancel').onclick = closeModal;
+  document.getElementById('eSave').onclick = async ()=>{
+    if(!requireFields([['e-desc','A description of what happened']])) return;
+    const data = {
+      motorId: parseInt(document.getElementById('e-motor').value),
+      reportedBy: document.getElementById('e-by').value.trim() || 'Unspecified',
+      description: document.getElementById('e-desc').value.trim(),
+      urgency: document.getElementById('e-urg').value,
+    };
+    try{
+      const id = await colAdd('events', data);
+      closeModal();
+      currentView='events'; showView('events');
+      setTimeout(()=>openEventDrawer(id), 80);
+    }catch(e){ alert(e.message); }
+  };
+}
+document.getElementById('addEventBtn').addEventListener('click', openEventModal);
+
+/* ============================= DRAWER: MOTOR DETAIL ============================= */
+function openMotorDrawer(id){
+  const m = motorById(id); if(!m) return;
+  id = m.id; // normalize to the canonical numeric id so every comparison below matches
+  const st = computeMotorStatus(m);
+  const history = state.events.filter(e=>String(e.motorId)===String(id)).sort((a,b)=>new Date(b.reportedAt)-new Date(a.reportedAt));
+  const compatible = state.spares.filter(s=> (s.compatibleMotorIds||[]).map(String).includes(String(id)));
+
+  // MTTR: average downtime across resolved events. MTBF: average gap between
+  // consecutive breakdown reports. Both need enough history to mean anything.
+  const resolved = history.filter(e=>e.downtimeHours!=null);
+  const mttr = resolved.length ? resolved.reduce((a,e)=>a+e.downtimeHours,0)/resolved.length : null;
+  let mtbf = null;
+  if(history.length>=2){
+    const asc = history.slice().sort((a,b)=>new Date(a.reportedAt)-new Date(b.reportedAt));
+    const gaps = [];
+    for(let i=1;i<asc.length;i++) gaps.push((new Date(asc[i].reportedAt)-new Date(asc[i-1].reportedAt))/3600000);
+    mtbf = gaps.reduce((a,g)=>a+g,0)/gaps.length;
+  }
+  const fmtHrs = h => h==null ? 'Not enough history' : (h>=48 ? (h/24).toFixed(1)+' days' : h.toFixed(1)+' hrs');
+
+  const html =
+    '<button class="drawer-close" id="mdClose">×</button>'+
+    '<div class="drawer-head"><div class="kicker">'+escapeHtml(m.department)+' · '+m.kw+' kW</div><h3>'+escapeHtml(m.tag)+'</h3>'+
+      '<div style="color:var(--text-dim); font-size:13px; margin-bottom:8px;">'+escapeHtml(m.name)+'</div>'+
+      '<span class="badge '+st+'">'+st+'</span>'+(st==='standby'?' <span class="badge '+(m.standbyCategory==='repaired'?'repair':'running')+'">'+(m.standbyCategory==='repaired'?'repaired — workshop':'new — in store')+'</span>':'')+'</div>'+
+    '<div class="drawer-body">'+
+      '<div class="drawer-section"><h4>Status</h4><div class="kv">'+
+        '<div><span class="k">Current location</span><span class="v">'+escapeHtml(currentLocationFor(m))+'</span></div>'+
+        '<div><span class="k">Condition</span><span class="v">'+escapeHtml(currentConditionFor(m))+'</span></div>'+
+        '<div><span class="k">Voltage / RPM</span><span class="v">'+m.voltage+'V · '+m.rpm+' rpm</span></div>'+
+        '<div><span class="k">Breakdown count</span><span class="v">'+history.length+'</span></div>'+
+        '<div><span class="k">MTTR (avg repair time)</span><span class="v">'+fmtHrs(mttr)+'</span></div>'+
+        '<div><span class="k">MTBF (avg time between failures)</span><span class="v">'+fmtHrs(mtbf)+'</span></div>'+
+      '</div></div>'+
+      '<div class="drawer-section"><h4>Compatible spares ('+compatible.length+')</h4>'+
+        (compatible.length ? compatible.map(s=>'<div class="row-item" style="padding:8px 0;"><div class="main-txt"><div class="t1">'+escapeHtml(s.name)+'</div><div class="t2">'+escapeHtml(s.partNumber||'')+'</div></div><span class="badge '+((s.qty<=s.minQty)?'low':'ok')+'">'+s.qty+' in stock</span></div>').join('')
+        : '<div class="empty-note" style="padding:10px 0;">No spares linked yet. Link them from the breakdown log when parts are used.</div>')+
+      '</div>'+
+      '<div class="drawer-section"><h4>Breakdown &amp; repair history</h4><div class="timeline">'+
+        (history.length ? history.map(ev=>'<div class="tl-item" data-hist-event="'+ev.id+'" style="cursor:pointer;"><div class="tl-dot"></div><div><div class="tl-time">'+fmtDate(ev.reportedAt)+' · '+STAGE_LABELS[ev.stage]+'</div><div>'+escapeHtml(ev.description||'No description')+'</div></div></div>').join('')
+        : '<div class="empty-note" style="padding:10px 0;">No breakdowns logged for this motor.</div>')+
+      '</div></div>'+
+      '<div class="drawer-section"><h4>Change history — who, what, when</h4><div class="timeline" id="mdAuditLog"><div class="empty-note" style="padding:10px 0;">Loading…</div></div></div>'+
+      '</div>'+
+      '<div style="padding:0 20px 20px;"><button class="btn" style="width:100%;" id="mdEdit">Edit motor details</button></div>';
+  document.getElementById('motorDrawer').innerHTML = html;
+  document.getElementById('motorDrawer').classList.add('open');
+  document.getElementById('motorDrawerOverlay').classList.add('open');
+  document.getElementById('mdClose').onclick = closeMotorDrawer;
+  document.getElementById('mdEdit').onclick = ()=>{ closeMotorDrawer(); openMotorModal(id); };
+  document.querySelectorAll('#motorDrawer [data-hist-event]').forEach(el=> el.onclick = ()=>{ closeMotorDrawer(); openEventDrawer(el.dataset.histEvent); });
+
+  apiFetch('/api/audit?entityType=motors&entityId='+id+'&limit=25').then(rows=>{
+    const el = document.getElementById('mdAuditLog');
+    if(!el) return;
+    el.innerHTML = rows.length ? rows.map(a=>'<div class="tl-item"><div class="tl-dot"></div><div><div class="tl-time">'+fmtDateTime(a.created_at)+' · '+escapeHtml(a.user_name)+'</div><div>'+escapeHtml(a.summary||a.action)+'</div></div></div>').join('')
+      : '<div class="empty-note" style="padding:10px 0;">No changes recorded yet.</div>';
+  }).catch(()=>{ const el=document.getElementById('mdAuditLog'); if(el) el.innerHTML = '<div class="empty-note" style="padding:10px 0;">Could not load history.</div>'; });
+}
+function closeMotorDrawer(){ document.getElementById('motorDrawer').classList.remove('open'); document.getElementById('motorDrawerOverlay').classList.remove('open'); }
+document.getElementById('motorDrawerOverlay').addEventListener('click', closeMotorDrawer);
+
+/* ============================= DRAWER: EVENT DETAIL (workflow) ============================= */
+function openEventDrawer(id){
+  const ev = state.events.find(e=>String(e.id)===String(id)); if(!ev) return;
+  const m = motorById(ev.motorId);
+  const canEdit = currentUser && (currentUser.role==='admin' || currentUser.role==='technician');
+
+  const html =
+    '<button class="drawer-close" id="edClose">×</button>'+
+    '<div class="drawer-head"><div class="kicker">'+escapeHtml(m?m.department:'')+' · reported '+timeAgo(ev.reportedAt)+' by '+escapeHtml(ev.reportedBy||'—')+'</div>'+
+      '<h3>'+escapeHtml(m?m.tag:'?')+'</h3>'+
+      '<div style="color:var(--text-dim); font-size:13px; margin-bottom:8px;">'+escapeHtml(m?m.name:'')+'</div>'+
+      '<span class="badge urg-'+ev.urgency+'">'+ev.urgency+' urgency</span> <span class="badge repair">'+STAGE_LABELS[ev.stage]+'</span></div>'+
+    '<div class="drawer-body" id="edBody"></div>';
+  document.getElementById('eventDrawer').innerHTML = html;
+  document.getElementById('eventDrawer').classList.add('open');
+  document.getElementById('eventDrawerOverlay').classList.add('open');
+  document.getElementById('edClose').onclick = closeEventDrawer;
+  renderEventDrawerBody(ev, m, canEdit);
+}
+
+function renderEventDrawerBody(ev, m, canEdit){
+  const stageIdx = STAGE_ORDER.indexOf(ev.stage);
+  const standbyMotors = state.motors.filter(mo=>computeMotorStatus(mo)==='standby');
+  const standbyOpts = standbyMotors.slice().sort((a,b)=>a.tag.localeCompare(b.tag))
+    .map(mo=>'<option value="'+mo.id+'">'+escapeHtml(mo.tag)+' — '+escapeHtml(mo.name)+' ('+(mo.standbyCategory==='repaired'?'repaired, workshop':'new, in store')+')</option>').join('');
+
+  const body = document.getElementById('edBody');
+  if(!body) return;
+  body.innerHTML =
+      '<div class="stage-track">'+STAGE_ORDER.map((s,i)=>'<div class="stage-step '+(i<stageIdx?'done':(i===stageIdx?'now':''))+'">'+STAGE_LABELS[s]+'</div>').join('')+'</div>'+
+      '<div class="drawer-section"><h4>Issue reported <button class="icon-btn" id="ed-editReportBtn" title="Edit" style="font-size:13px;">✎ edit</button></h4>'+
+        '<div id="ed-reportView" style="font-size:13px;">'+escapeHtml(ev.description||'No description given')+'</div>'+
+        '<div id="ed-reportEdit" style="display:none;">'+
+          '<div class="field"><label>Description</label><textarea id="ed-desc" rows="2">'+escapeHtml(ev.description||'')+'</textarea></div>'+
+          '<div class="grid2"><div class="field"><label>Urgency</label><select id="ed-urg"><option value="high" '+(ev.urgency==='high'?'selected':'')+'>High</option><option value="medium" '+(ev.urgency==='medium'?'selected':'')+'>Medium</option><option value="low" '+(ev.urgency==='low'?'selected':'')+'>Low</option></select></div>'+
+          '<div class="field"><label>Reported by</label><input id="ed-reportedBy" value="'+escapeHtml(ev.reportedBy||'')+'"></div></div>'+
+          '<button class="btn btn-primary btn-sm" id="ed-saveReportBtn">Save details</button> <button class="btn btn-sm btn-ghost" id="ed-cancelReportBtn">Cancel</button>'+
+        '</div>'+
+      '</div>'+
+      (ev.stage!=='resolved' ? (
+        '<div class="drawer-section"><h4>Update progress</h4>'+
+        '<div class="field"><label>Move to stage</label><select id="ed-stage">'+
+          STAGE_ORDER.filter(s=>s!=='resolved').map(s=>'<option value="'+s+'" '+(s===ev.stage?'selected':'')+'>'+STAGE_LABELS[s]+'</option>').join('')+
+        '</select></div>'+
+        '<div class="field" id="ed-workshopWrap" style="display:'+(ev.stage==='in_repair'||ev.repairLocationType?'block':'none')+';"><label>Workshop</label><select id="ed-workshop">'+
+          '<option value="">— choose —</option>'+
+          '<option value="Internal workshop" '+(ev.repairLocationType==='Internal workshop'?'selected':'')+'>Internal (central) workshop</option>'+
+          '<option value="External workshop" '+(ev.repairLocationType==='External workshop'?'selected':'')+'>External workshop</option>'+
+        '</select></div>'+
+        '<div class="field"><label>Location detail</label><input id="ed-loc" value="'+escapeHtml(ev.repairLocation||'')+'" placeholder="e.g. Bay 2, or vendor name &amp; city"></div>'+
+        '<div class="field"><label>Condition notes</label><input id="ed-cond" value="'+escapeHtml(ev.condition||'')+'" placeholder="e.g. Rewinding stator, bearings ordered"></div>'+
+        '<div class="field"><label>Add a note (optional)</label><input id="ed-note" placeholder="Short update for the timeline"></div>'+
+        '<button class="btn btn-primary btn-sm" id="ed-updateBtn">Save update</button> <span id="ed-saveStatus" style="font-size:11.5px; color:var(--moss); margin-left:8px;"></span>'+
+        '</div>'+
+        '<div class="drawer-section"><h4>Spare motor swap</h4>'+
+        '<div style="font-size:11.5px; color:var(--text-faint); margin-bottom:8px;">If a standby motor (new or repaired) is being installed in place of this one to keep the line running, record it here — it comes off the standby list and this swap is logged.</div>'+
+        '<div id="ed-swapsList">'+(ev.motorSwaps&&ev.motorSwaps.length ? ev.motorSwaps.map(s=>'<div class="row-item" style="padding:6px 0;"><div class="main-txt t1">'+escapeHtml(s.tag)+'</div><span class="side" style="font-size:11px;">'+fmtDate(s.at)+'</span></div>').join('') : '<div class="empty-note" style="padding:6px 0;">No spare motor swapped in yet.</div>')+'</div>'+
+        (standbyOpts.length ? '<div style="display:flex; gap:8px; margin-top:8px;"><select id="ed-swapSel" style="flex:1;">'+standbyOpts+'</select><button class="btn btn-sm" id="ed-swapBtn">Install</button></div>' : '<div class="empty-note" style="padding:6px 0;">No standby spare motors available right now.</div>')+
+        '</div>'+
+        '<div class="drawer-section"><button class="btn" style="width:100%; border-color:var(--moss); color:var(--moss);" id="ed-resolveBtn">Mark resolved — motor is back in service</button></div>'
+      ) : (
+        '<div class="drawer-section"><h4>Resolved</h4><div class="kv">'+
+        '<div><span class="k">Resolved</span><span class="v">'+fmtDateTime(ev.resolvedAt)+'</span></div>'+
+        '<div><span class="k">Total downtime</span><span class="v">'+downtimeHoursOf(ev).toFixed(1)+' hours</span></div>'+
+        '</div></div>'+
+        (ev.motorSwaps&&ev.motorSwaps.length ? '<div class="drawer-section"><h4>Spare motors used</h4>'+ev.motorSwaps.map(s=>'<div class="row-item" style="padding:6px 0;"><div class="main-txt t1">'+escapeHtml(s.tag)+'</div><span class="side" style="font-size:11px;">'+fmtDate(s.at)+'</span></div>').join('')+'</div>' : '')+
+        '<div class="drawer-section"><button class="btn btn-sm" id="ed-reopenBtn">↺ Reopen — issue recurred</button></div>'
+      ))+
+      '<div class="drawer-section"><h4>Timeline</h4><div class="timeline">'+
+        (ev.timeline||[]).slice().reverse().map(t=>'<div class="tl-item"><div class="tl-dot"></div><div><div class="tl-time">'+fmtDateTime(t.at)+'</div><div>'+escapeHtml(t.text)+'</div></div></div>').join('')+
+      '</div></div>'+
+      '<div class="drawer-section"><button class="btn btn-danger" style="width:100%;" id="ed-deleteBtn">Delete this breakdown record</button></div>';
+
+  // In-place refresh helper: re-fetches data, then re-renders THIS drawer's
+  // body without closing it, so editing stays fluid across multiple saves.
+  async function refreshInPlace(){
+    await refreshAll();
+    const fresh = state.events.find(e=>String(e.id)===String(ev.id));
+    if(fresh) renderEventDrawerBody(fresh, m, canEdit);
+  }
+
+  document.getElementById('ed-editReportBtn').onclick = ()=>{
+    document.getElementById('ed-reportView').style.display='none';
+    document.getElementById('ed-reportEdit').style.display='block';
+    document.getElementById('ed-editReportBtn').style.display='none';
+  };
+  document.getElementById('ed-cancelReportBtn').onclick = ()=>{
+    document.getElementById('ed-reportView').style.display='block';
+    document.getElementById('ed-reportEdit').style.display='none';
+    document.getElementById('ed-editReportBtn').style.display='inline';
+  };
+  document.getElementById('ed-saveReportBtn').onclick = async ()=>{
+    try{
+      await docUpdate('events', ev.id, {
+        description: document.getElementById('ed-desc').value.trim(),
+        urgency: document.getElementById('ed-urg').value,
+        reportedBy: document.getElementById('ed-reportedBy').value.trim(),
+      });
+      await refreshInPlace();
+    }catch(e){ alert('Could not save: ' + e.message); }
+  };
+
+  if(ev.stage!=='resolved'){
+    document.getElementById('ed-stage').addEventListener('change', (e)=>{
+      document.getElementById('ed-workshopWrap').style.display = e.target.value==='in_repair' ? 'block' : 'none';
+    });
+    document.getElementById('ed-updateBtn').onclick = async ()=>{
+      const newStage = document.getElementById('ed-stage').value;
+      const workshop = document.getElementById('ed-workshop').value;
+      if(newStage==='in_repair' && !workshop){ alert('Choose Internal or External workshop.'); return; }
+      const loc = document.getElementById('ed-loc').value.trim();
+      const cond = document.getElementById('ed-cond').value.trim();
+      const note = document.getElementById('ed-note').value.trim();
+      try{
+        await docUpdate('events', ev.id, {stage:newStage, repairLocationType:workshop, repairLocation:loc, condition:cond, note});
+        await refreshInPlace();
+      }catch(e){ alert('Could not save update: ' + e.message); }
+    };
+    const swapBtn = document.getElementById('ed-swapBtn');
+    if(swapBtn) swapBtn.onclick = async ()=>{
+      const spareMotorId = document.getElementById('ed-swapSel').value;
+      if(!spareMotorId) return;
+      const spareMotor = motorById(spareMotorId);
+      if(!confirm('Install '+(spareMotor?spareMotor.tag:'this motor')+' in place of '+(m?m.tag:'this motor')+'? It will come off the standby list.')) return;
+      try{
+        await apiFetch('/api/events/'+ev.id+'/swap-motor', {method:'POST', body:JSON.stringify({spareMotorId})});
+        await refreshInPlace();
+      }catch(e){ alert('Could not record swap: ' + e.message); }
+    };
+    document.getElementById('ed-resolveBtn').onclick = async ()=>{
+      try{
+        await resolveEvent(ev.id);
+        await refreshInPlace();
+      }catch(e){ alert('Could not resolve: ' + e.message); }
+    };
+  } else {
+    document.getElementById('ed-reopenBtn').onclick = async ()=>{
+      try{
+        await apiFetch('/api/events/'+ev.id+'/reopen', {method:'POST'});
+        await refreshInPlace();
+      }catch(e){ alert('Could not reopen: ' + e.message); }
+    };
+  }
+  document.getElementById('ed-deleteBtn').onclick = async ()=>{
+    if(!confirm('Delete this breakdown record for '+(m?m.tag:'this motor')+'? This cannot be undone.')) return;
+    try{
+      await docDelete('events', ev.id);
+      closeEventDrawer();
+    }catch(e){ alert('Could not delete: ' + e.message); }
+  };
+}
+function closeEventDrawer(){ document.getElementById('eventDrawer').classList.remove('open'); document.getElementById('eventDrawerOverlay').classList.remove('open'); }
+document.getElementById('eventDrawerOverlay').addEventListener('click', closeEventDrawer);
+
+/* ============================= THEME ============================= */
+function setTheme(mode){
+  if(mode==='auto') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', mode);
+  document.querySelectorAll('[data-theme-btn]').forEach(b=>b.classList.toggle('active', b.dataset.themeBtn===mode));
+  try{ localStorage.setItem('motortrack_theme', mode); }catch(e){}
+}
+document.querySelectorAll('[data-theme-btn]').forEach(b=> b.onclick = ()=>setTheme(b.dataset.themeBtn));
+setTheme((function(){ try{ return localStorage.getItem('motortrack_theme') || 'auto'; }catch(e){ return 'auto'; } })());
+
+/* ============================= CLOCK ============================= */
+function tickClock(){
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleDateString('en-GB',{weekday:'short', day:'2-digit', month:'short'}) + '  ' + now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+}
+tickClock(); setInterval(tickClock, 30000);
+
+/* ============================= BOOT ============================= */
+initAuth();
+
+})();
+</script>
+</body>
+</html>
