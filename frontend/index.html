@@ -267,6 +267,13 @@ td.num{font-family:var(--font-mono); text-align:right;}
   .view:not(#view-reports){ display:none !important; }
   a[href]:after{ content:""; }
 }
+.searchable-wrap{position:relative;}
+.searchable-list{position:absolute; top:100%; left:0; right:0; margin-top:2px; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); max-height:230px; overflow-y:auto; z-index:80; box-shadow:var(--shadow); display:none;}
+.searchable-list.open{display:block;}
+.searchable-item{padding:8px 12px; cursor:pointer; font-size:13px; border-bottom:1px solid var(--line-soft);}
+.searchable-item:last-child{border-bottom:none;}
+.searchable-item:hover{background:var(--surface-2);}
+.searchable-item .sl-sub{font-size:11px; color:var(--text-faint); margin-top:1px;}
 </style>
 </head>
 <body>
@@ -839,6 +846,36 @@ function requireFields(pairs){
     }
   }
   return true;
+}
+
+/** Turns a text input + hidden input + list <div> into a type-to-search
+ * combobox. options: [{id, label, sublabel}]. Selecting an item sets
+ * hidden.value = id and input.value = label; typing re-filters live. */
+function wireSearchableSelect(inputId, hiddenId, listId, options){
+  const input = document.getElementById(inputId);
+  const hidden = document.getElementById(hiddenId);
+  const list = document.getElementById(listId);
+  if(!input || !hidden || !list) return;
+  function renderList(filter){
+    const q = (filter||'').toLowerCase().trim();
+    const matches = !q ? options : options.filter(o => (o.label+' '+(o.sublabel||'')).toLowerCase().includes(q));
+    list.innerHTML = matches.length
+      ? matches.slice(0,60).map(o=>'<div class="searchable-item" data-id="'+String(o.id).replace(/"/g,'&quot;')+'">'+escapeHtml(o.label)+(o.sublabel?'<div class="sl-sub">'+escapeHtml(o.sublabel)+'</div>':'')+'</div>').join('')
+      : '<div class="searchable-item" style="color:var(--text-faint); cursor:default;">No matches</div>';
+    list.querySelectorAll('[data-id]').forEach(item=>{
+      item.onclick = ()=>{
+        const opt = options.find(o=>String(o.id)===item.dataset.id);
+        if(!opt) return;
+        hidden.value = opt.id;
+        input.value = opt.label;
+        list.classList.remove('open');
+      };
+    });
+  }
+  input.addEventListener('focus', ()=>{ renderList(input.value); list.classList.add('open'); });
+  input.addEventListener('input', ()=>{ hidden.value=''; renderList(input.value); list.classList.add('open'); });
+  input.addEventListener('blur', ()=> setTimeout(()=>list.classList.remove('open'), 150));
+  renderList('');
 }
 
 const STAGE_LABELS = {reported:'Reported', diagnosing:'Diagnosing', awaiting_parts:'Awaiting parts', in_repair:'In repair', resolved:'Resolved'};
@@ -1814,22 +1851,28 @@ if(restoreBackupBtn){
 function openEventModal(){
   const runningMotors = state.motors.filter(m=>computeMotorStatus(m)==='running');
   if(!runningMotors.length){ alert('No running motors available to report a breakdown on. (Motors on standby, decommissioned, or already broken down/under repair are not shown here.)'); return; }
-  const motorOpts = runningMotors.slice().sort((a,b)=>a.tag.localeCompare(b.tag))
-    .map(m=>'<option value="'+m.id+'">'+escapeHtml(m.tag)+' — '+escapeHtml(m.name)+'</option>').join('');
+  const motorOptions = runningMotors.slice().sort((a,b)=>a.tag.localeCompare(b.tag))
+    .map(m=>({id:m.id, label:m.tag+' — '+m.name, sublabel:m.department}));
   openModal(
     '<div class="modal-head"><h3>Report a breakdown</h3><button class="modal-close" id="eClose">×</button></div>'+
     '<div class="modal-body">'+
       '<p style="font-size:11.5px; color:var(--text-faint); margin-top:0;">Only motors currently running are listed — a motor on standby, decommissioned, or already down can\'t break down again.</p>'+
-      '<div class="field"><label>Motor</label><select id="e-motor">'+motorOpts+'</select></div>'+
+      '<div class="field"><label>Motor *</label><div class="searchable-wrap">'+
+        '<input type="text" id="e-motor-search" placeholder="Type to search by tag or name…" autocomplete="off">'+
+        '<input type="hidden" id="e-motor">'+
+        '<div class="searchable-list" id="e-motor-list"></div>'+
+      '</div></div>'+
       '<div class="field"><label>What happened *</label><textarea id="e-desc" rows="3" placeholder="e.g. Tripping on overload, unusual noise from bearing…"></textarea></div>'+
       '<div class="grid2"><div class="field"><label>Urgency</label><select id="e-urg"><option value="high">High — line stopped</option><option value="medium" selected>Medium</option><option value="low">Low</option></select></div>'+
       '<div class="field"><label>Reported by</label><input id="e-by" placeholder="Your name"></div></div>'+
     '</div>'+
     '<div class="modal-foot"><button class="btn" id="eCancel">Cancel</button><button class="btn btn-primary" id="eSave">Log breakdown</button></div>'
   );
+  wireSearchableSelect('e-motor-search', 'e-motor', 'e-motor-list', motorOptions);
   document.getElementById('eClose').onclick = closeModal;
   document.getElementById('eCancel').onclick = closeModal;
   document.getElementById('eSave').onclick = async ()=>{
+    if(!document.getElementById('e-motor').value){ alert('Search and pick a motor from the list.'); return; }
     if(!requireFields([['e-desc','A description of what happened']])) return;
     const data = {
       motorId: parseInt(document.getElementById('e-motor').value),
@@ -1846,7 +1889,6 @@ function openEventModal(){
   };
 }
 document.getElementById('addEventBtn').addEventListener('click', openEventModal);
-
 /* ============================= DRAWER: MOTOR DETAIL ============================= */
 function openMotorDrawer(id){
   const m = motorById(id); if(!m) return;
@@ -1932,9 +1974,9 @@ function openEventDrawer(id){
 
 function renderEventDrawerBody(ev, m, canEdit){
   const stageIdx = STAGE_ORDER.indexOf(ev.stage);
-  const standbyMotors = state.motors.filter(mo=>computeMotorStatus(mo)==='standby');
-  const standbyOpts = standbyMotors.slice().sort((a,b)=>a.tag.localeCompare(b.tag))
-    .map(mo=>'<option value="'+mo.id+'">'+escapeHtml(mo.tag)+' — '+escapeHtml(mo.name)+' ('+(mo.standbyCategory==='repaired'?'repaired, workshop':'new, in store')+')</option>').join('');
+    const standbyMotorsList = state.motors.filter(mo=>computeMotorStatus(mo)==='standby');
+  const standbyOptions = standbyMotorsList.slice().sort((a,b)=>a.tag.localeCompare(b.tag))
+    .map(mo=>({id:mo.id, label:mo.tag+' — '+mo.name, sublabel:(mo.standbyCategory==='repaired'?'Repaired, workshop':'New, in store')+' · '+mo.department}));
 
   const body = document.getElementById('edBody');
   if(!body) return;
@@ -1967,7 +2009,7 @@ function renderEventDrawerBody(ev, m, canEdit){
         '<div class="drawer-section"><h4>Spare motor swap</h4>'+
         '<div style="font-size:11.5px; color:var(--text-faint); margin-bottom:8px;">If a standby motor (new or repaired) is being installed in place of this one to keep the line running, record it here — it comes off the standby list and this swap is logged.</div>'+
         '<div id="ed-swapsList">'+(ev.motorSwaps&&ev.motorSwaps.length ? ev.motorSwaps.map(s=>'<div class="row-item" style="padding:6px 0;"><div class="main-txt t1">'+escapeHtml(s.tag)+'</div><span class="side" style="font-size:11px;">'+fmtDate(s.at)+'</span></div>').join('') : '<div class="empty-note" style="padding:6px 0;">No spare motor swapped in yet.</div>')+'</div>'+
-        (standbyOpts.length ? '<div style="display:flex; gap:8px; margin-top:8px;"><select id="ed-swapSel" style="flex:1;">'+standbyOpts+'</select><button class="btn btn-sm" id="ed-swapBtn">Install</button></div>' : '<div class="empty-note" style="padding:6px 0;">No standby spare motors available right now.</div>')+
+        (standbyOptions.length ? '<div class="searchable-wrap" style="display:flex; gap:8px; margin-top:8px;"><div class="searchable-wrap" style="flex:1;"><input type="text" id="ed-swap-search" placeholder="Search standby motor by tag or name…" autocomplete="off"><input type="hidden" id="ed-swapSel"><div class="searchable-list" id="ed-swap-list"></div></div><button class="btn btn-sm" id="ed-swapBtn">Install</button></div>' : '<div class="empty-note" style="padding:6px 0;">No standby spare motors available right now.</div>')+
         '</div>'+
         '<div class="drawer-section"><button class="btn" style="width:100%; border-color:var(--moss); color:var(--moss);" id="ed-resolveBtn">Mark resolved — motor is back in service</button></div>'
       ) : (
@@ -1982,7 +2024,7 @@ function renderEventDrawerBody(ev, m, canEdit){
         (ev.timeline||[]).slice().reverse().map(t=>'<div class="tl-item"><div class="tl-dot"></div><div><div class="tl-time">'+fmtDateTime(t.at)+'</div><div>'+escapeHtml(t.text)+'</div></div></div>').join('')+
       '</div></div>'+
       '<div class="drawer-section"><button class="btn btn-danger" style="width:100%;" id="ed-deleteBtn">Delete this breakdown record</button></div>';
-
+  if(standbyOptions.length) wireSearchableSelect('ed-swap-search', 'ed-swapSel', 'ed-swap-list', standbyOptions);
   // In-place refresh helper: re-fetches data, then re-renders THIS drawer's
   // body without closing it, so editing stays fluid across multiple saves.
   async function refreshInPlace(){
@@ -2030,8 +2072,8 @@ function renderEventDrawerBody(ev, m, canEdit){
     };
     const swapBtn = document.getElementById('ed-swapBtn');
     if(swapBtn) swapBtn.onclick = async ()=>{
-      const spareMotorId = document.getElementById('ed-swapSel').value;
-      if(!spareMotorId) return;
+        const spareMotorId = document.getElementById('ed-swapSel').value;
+      if(!spareMotorId){ alert('Search and pick a standby motor from the list first.'); return; }
       const spareMotor = motorById(spareMotorId);
       if(!confirm('Install '+(spareMotor?spareMotor.tag:'this motor')+' in place of '+(m?m.tag:'this motor')+'? It will come off the standby list.')) return;
       try{
