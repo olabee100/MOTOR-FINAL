@@ -1608,7 +1608,7 @@ console.log('MAPPED:', {
 
   manualStatus: manualStatus || 'running',
 
-  locationType: locationType || '',
+  locationType: validLocTypes.includes(locationType) ? locationType : '',
   placementDetail: placementDetail || '',
   condition: condition || ''
 };
