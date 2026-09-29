@@ -120,7 +120,7 @@ router.post(
           b.rpm || 1450,
           b.manualStatus || 'running',
           '',
-          b.locationType || 'Mill floor',
+          b.locationType || '',
           b.placementDetail || '',
           b.standbyCategory || 'new',
           b.condition || '',
@@ -225,7 +225,7 @@ router.put(
           b.voltage,
           b.rpm,
           b.manualStatus,
-          b.locationType || 'Mill floor',
+          b.locationType || '',
           b.placementDetail || '',
           b.standbyCategory || 'new',
           b.condition,
@@ -295,7 +295,7 @@ router.post(
       const rows = Array.isArray(req.body?.motors)
         ? req.body.motors
         : [];
-
+console.log('BULK ROWS:', JSON.stringify(rows, null, 2));
       const now = new Date();
 
       const seenInBatch = new Set();
@@ -366,7 +366,7 @@ router.post(
             parseInt(b.rpm) || 1450,
             b.manualStatus || 'running',
             '',
-            b.locationType || 'Mill floor',
+            b.locationType || '',
             b.placementDetail || b.currentLocation || '',
             b.standbyCategory || 'new',
             b.condition || '',
