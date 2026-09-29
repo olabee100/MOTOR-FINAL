@@ -106,7 +106,7 @@ async function initDb() {
   await ensureColumn(
     'motors',
     'location_type',
-    `TEXT DEFAULT 'Mill floor'`
+    `TEXT DEFAULT ''`
   );
 
   await ensureColumn(
