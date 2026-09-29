@@ -1488,7 +1488,7 @@ function openMotorModal(id){
         '<option value="decommissioned" '+(m&&m.manualStatus==='decommissioned'?'selected':'')+'>Decommissioned</option>'+
       '</select></div>'+
       '<div class="field" id="f-standbyCatWrap" style="display:'+(m&&m.manualStatus==='standby'?'block':'none')+';"><label>Spare category</label><select id="f-standbyCat"><option value="new" '+(m&&m.standbyCategory==='new'?'selected':'')+'>New — never installed, bought as spare</option><option value="repaired" '+(m&&m.standbyCategory==='repaired'?'selected':'')+'>Repaired — fixed, standing by in workshop</option></select></div>'+
-      '<div class="grid2"><div class="field"><label>Location</label><select id="f-loctype">'+locTypes.map(t=>'<option '+(m&&m.locationType===t?'selected':(!m&&t==='Mill floor'?'selected':''))+'>'+t+'</option>').join('')+'</select></div>'+
+      '<div class="grid2"><div class="field"><label>Location</label><select id="f-loctype">'+locTypes.map(t=>'<option '+(m&&m.locationType===t?'selected':(!m&&t===''?'selected':''))+'>'+t+'</option>').join('')+'</select></div>'+
       '<div class="field"><label>Actual placement</label><input id="f-placement" value="'+(m?escapeHtml(m.placementDetail||''):'')+'" placeholder="e.g. Bay 3, Container 2, Rack 5"></div></div>'+
       '<div class="field"><label>Condition notes</label><textarea id="f-cond" rows="2" placeholder="e.g. Good / bearing noise / due for service">'+(m?escapeHtml(m.condition||''):'')+'</textarea></div>'+
     '</div>'+
@@ -1562,7 +1562,7 @@ function openBulkMotorModal(){
       const [tag,name,department,kw,voltage,rpm,locationType,placementDetail,condition] = r;
       return { tag: tag||'UNTAGGED', name: name||tag||'Unnamed motor', department: department||'Milling',
         kw: parseFloat(kw)||0, voltage: parseInt(voltage)||415, rpm: parseInt(rpm)||1450,
-        locationType: validLocTypes.includes(locationType) ? locationType : 'Mill floor',
+        locationType: validLocTypes.includes(locationType) ? locationType : '',
         placementDetail: placementDetail||'', condition: condition||'' };
     });
     try{ await bulkAddMotors(payload); }catch(e){ alert(e.message); }

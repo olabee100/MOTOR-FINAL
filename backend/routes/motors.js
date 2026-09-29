@@ -7,7 +7,7 @@ const router = express.Router();
 
 
 function rowToMotor(r) {
-  const locType = r.location_type || 'Mill floor';
+  const locType = r.location_type || '';
   const detail = r.placement_detail || '';
 
   return {
