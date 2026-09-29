@@ -1570,6 +1570,8 @@ function openBulkMotorModal(){
   'Other'
 ];
     const payload = rows.map(r=>{
+
+       console.log('RAW ROW:', r);
       const [
   tag,
   name,
@@ -1582,6 +1584,19 @@ function openBulkMotorModal(){
   placementDetail,
   condition
 ] = r;
+
+console.log('MAPPED:', {
+    tag,
+    name,
+    department,
+    kw,
+    voltage,
+    rpm,
+    manualStatus,
+    locationType,
+    placementDetail,
+    condition
+  });
       return { tag: tag||'UNTAGGED', name: name||tag||'Unnamed motor', department: department||'Milling',
         kw: parseFloat(kw)||0, voltage: parseInt(voltage)||415, rpm: parseInt(rpm)||1450,
         locationType: locationType || '',
