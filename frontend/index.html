@@ -1573,7 +1573,7 @@ function openBulkMotorModal(){
       const [tag,name,department,kw,voltage,rpm,locationType,placementDetail,condition] = r;
       return { tag: tag||'UNTAGGED', name: name||tag||'Unnamed motor', department: department||'Milling',
         kw: parseFloat(kw)||0, voltage: parseInt(voltage)||415, rpm: parseInt(rpm)||1450,
-        locationType: validLocTypes.includes(locationType) ? locationType : '',
+        locationType: locationType || '',
         placementDetail: placementDetail||'', condition: condition||'' };
     });
     try{ await bulkAddMotors(payload); }catch(e){ alert(e.message); }
