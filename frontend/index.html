@@ -863,13 +863,16 @@ function wireSearchableSelect(inputId, hiddenId, listId, options){
       ? matches.slice(0,60).map(o=>'<div class="searchable-item" data-id="'+String(o.id).replace(/"/g,'&quot;')+'">'+escapeHtml(o.label)+(o.sublabel?'<div class="sl-sub">'+escapeHtml(o.sublabel)+'</div>':'')+'</div>').join('')
       : '<div class="searchable-item" style="color:var(--text-faint); cursor:default;">No matches</div>';
     list.querySelectorAll('[data-id]').forEach(item=>{
-      item.onclick = ()=>{
+      // mousedown + preventDefault fires BEFORE the input's blur event, so
+      // selecting an item can't get raced/cancelled by focus leaving the input.
+      item.addEventListener('mousedown', (e)=>{
+        e.preventDefault();
         const opt = options.find(o=>String(o.id)===item.dataset.id);
         if(!opt) return;
         hidden.value = opt.id;
         input.value = opt.label;
-        list.classList.remove('open');
-      };
+        list.classLisst.remove('open');
+      });
     });
   }
   input.addEventListener('focus', ()=>{ renderList(input.value); list.classList.add('open'); });
@@ -877,7 +880,6 @@ function wireSearchableSelect(inputId, hiddenId, listId, options){
   input.addEventListener('blur', ()=> setTimeout(()=>list.classList.remove('open'), 150));
   renderList('');
 }
-
 const STAGE_LABELS = {reported:'Reported', diagnosing:'Diagnosing', awaiting_parts:'Awaiting parts', in_repair:'In repair', resolved:'Resolved'};
 const STAGE_ORDER = ['reported','diagnosing','awaiting_parts','in_repair','resolved'];
 
