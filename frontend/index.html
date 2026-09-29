@@ -1557,7 +1557,7 @@ function openBulkMotorModal(){
     const rows = parseLines();
     if(!rows.length){ closeModal(); return; }
     const btn = document.getElementById('bmSave'); btn.disabled = true; btn.textContent = 'Adding…';
-    const validLocTypes = ['Mill floor','Internal workshop','External workshop','Container','Store','Vendor','Other'];
+    const validLocTypes = ['Internal workshop','External workshop','Container','Store','Vendor','Other'];
     const payload = rows.map(r=>{
       const [tag,name,department,kw,voltage,rpm,locationType,placementDetail,condition] = r;
       return { tag: tag||'UNTAGGED', name: name||tag||'Unnamed motor', department: department||'Milling',
@@ -1607,7 +1607,7 @@ function openBulkSpareMotorModal(prefill){
     const rows = parseLines();
     if(!rows.length){ closeModal(); return; }
     const btn = document.getElementById('bsmSave'); btn.disabled = true; btn.textContent = 'Adding…';
-    const validLocTypes = ['Internal workshop','External workshop','Container','Store','Vendor','Other','Mill floor'];
+    const validLocTypes = ['Internal workshop','External workshop','Container','Store','Vendor','Other',];
     const payload = rows.map(r=>{
       const [tag,name,department,kw,voltage,rpm,category,locationType,placementDetail,condition] = r;
       return { tag: tag||'UNTAGGED', name: name||tag||'Unnamed motor', department: department||'Milling',
