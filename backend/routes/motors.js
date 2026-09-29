@@ -96,7 +96,6 @@ router.post(
           voltage,
           rpm,
           manual_status,
-          current_location,
           location_type,
           placement_detail,
           standby_category,
@@ -342,7 +341,7 @@ console.log('BULK ROWS:', JSON.stringify(rows, null, 2));
             voltage,
             rpm,
             manual_status,
-            current_location,
+           current_location,
             location_type,
             placement_detail,
             standby_category,
@@ -358,21 +357,21 @@ console.log('BULK ROWS:', JSON.stringify(rows, null, 2));
           RETURNING id
           `,
           [
-            tag,
-            b.name || tag || 'Unnamed motor',
-            b.department || 'Milling',
-            parseFloat(b.kw) || 0,
-            parseInt(b.voltage) || 415,
-            parseInt(b.rpm) || 1450,
-            b.manualStatus || 'running',
-            '',
-            b.locationType || '',
-            b.placementDetail || b.currentLocation || '',
-            b.standbyCategory || 'new',
-            b.condition || '',
-            now,
-            now
-          ]
+  tag,
+  b.name || tag || 'Unnamed motor',
+  b.department || 'Milling',
+  parseFloat(b.kw) || 0,
+  parseInt(b.voltage) || 415,
+  parseInt(b.rpm) || 1450,
+  b.manualStatus || 'running',
+  '',                          // current_location
+  b.locationType || '',       // location_type
+  b.placementDetail || '',    // placement_detail
+  b.standbyCategory || 'new',
+  b.condition || '',
+  now,
+  now
+]
         );
 
         const motorId = result.rows[0].id;
