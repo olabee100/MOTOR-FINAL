@@ -38,9 +38,9 @@ async function initDb() {
       created_at TIMESTAMPTZ NOT NULL,
       updated_at TIMESTAMPTZ NOT NULL,
 
-      location_type TEXT DEFAULT 'Mill floor',
+      location_type TEXT DEFAULT '',
       placement_detail TEXT DEFAULT '',
-      standby_category TEXT DEFAULT 'new'
+      standby_category TEXT DEFAULT ''
     );
 
     CREATE TABLE IF NOT EXISTS spares (
