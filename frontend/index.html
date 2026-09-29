@@ -1597,10 +1597,21 @@ console.log('MAPPED:', {
     placementDetail,
     condition
   });
-      return { tag: tag||'UNTAGGED', name: name||tag||'Unnamed motor', department: department||'Milling',
-        kw: parseFloat(kw)||0, voltage: parseInt(voltage)||415, rpm: parseInt(rpm)||1450,
-        locationType: locationType || '',
-        placementDetail: placementDetail||'', condition: condition||'' };
+      return {
+  tag: tag || 'UNTAGGED',
+  name: name || tag || 'Unnamed motor',
+  department: department || 'Milling',
+
+  kw: parseFloat(kw) || 0,
+  voltage: parseInt(voltage) || 415,
+  rpm: parseInt(rpm) || 1450,
+
+  manualStatus: manualStatus || 'running',
+
+  locationType: locationType || '',
+  placementDetail: placementDetail || '',
+  condition: condition || ''
+};
     });
     try{ await bulkAddMotors(payload); }catch(e){ alert(e.message); }
     closeModal();
