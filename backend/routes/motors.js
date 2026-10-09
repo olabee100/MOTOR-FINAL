@@ -7,9 +7,10 @@ const router = express.Router();
 
 // A technician may only touch a motor that is currently broken down or under repair.
 
+
 async function techCanEdit(motorId) {
   const motorResult = await pool.query(
-    'SELECT manual_status FROM motors WHERE id = $1',
+    'SELECT id, manual_status FROM motors WHERE id = $1',
     [motorId]
   );
 
@@ -17,19 +18,22 @@ async function techCanEdit(motorId) {
 
   if (!motor) return false;
 
+  // Allow editing motors that are currently under repair.
   if (motor.manual_status === 'repair') return true;
 
+  // Allow editing motors with breakdown history,
+  // including breakdowns that have already been resolved.
   const eventResult = await pool.query(
     `SELECT 1
      FROM events
      WHERE motor_id = $1
-       AND stage <> 'resolved'
      LIMIT 1`,
     [motorId]
   );
 
   return eventResult.rows.length > 0;
 }
+
 
 
 function rowToMotor(r) {
@@ -209,48 +213,28 @@ router.put(
       }
 
    
+
 if (req.user.role === 'technician') {
   if (!(await techCanEdit(motorId))) {
     return res.status(403).json({
-      error: 'Technicians can only edit motors that are broken down or under repair.'
+      error: 'Technicians can only edit motors involved in a breakdown or under repair.'
     });
   }
 
-  // Technicians may return a repaired motor to standby.
-  // Other status changes remain restricted.
-  if (b.manualStatus !== oldRow.manual_status) {
-    const allowedRepairToStandby =
-      oldRow.manual_status === 'repair' &&
-      b.manualStatus === 'standby';
+  const allowedStatuses = ['standby', 'repair'];
 
-    if (!allowedRepairToStandby) {
+  if (
+    b.manualStatus !== undefined &&
+    b.manualStatus !== oldRow.manual_status
+  ) {
+    if (!allowedStatuses.includes(b.manualStatus)) {
       return res.status(403).json({
-        error: 'Technicians may change a repaired motor to standby only.'
+        error: 'Technicians can only change motor status to standby or repair. Ask an admin to set a motor to running.'
       });
     }
   }
 }
 
-if (req.user.role === 'technician') {
-  if (!(await techCanEdit(motorId))) {
-    return res.status(403).json({
-      error: 'Technicians can only edit motors that are broken down or under repair.'
-    });
-  }
-
-  const allowedRepairToStandby =
-    oldRow.manual_status === 'repair' &&
-    b.manualStatus === 'standby';
-
-  if (
-    b.manualStatus !== oldRow.manual_status &&
-    !allowedRepairToStandby
-  ) {
-    return res.status(403).json({
-      error: 'Technicians may change a repaired motor to standby only.'
-    });
-  }
-}
 
 
       const tag = (b.tag || '').trim();
