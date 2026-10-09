@@ -6,12 +6,31 @@ const { logAudit, diffSummary } = require('../services/audit');
 const router = express.Router();
 
 // A technician may only touch a motor that is currently broken down or under repair.
-function techCanEdit(motorId) {
-  const m = db.prepare('SELECT manual_status FROM motors WHERE id = ?').get(motorId);
-  if (!m) return false;
-  if (m.manual_status === 'repair') return true;
-  return !!db.prepare("SELECT 1 FROM events WHERE motor_id = ? AND stage != 'resolved'").get(motorId);
+
+async function techCanEdit(motorId) {
+  const motorResult = await pool.query(
+    'SELECT manual_status FROM motors WHERE id = $1',
+    [motorId]
+  );
+
+  const motor = motorResult.rows[0];
+
+  if (!motor) return false;
+
+  if (motor.manual_status === 'repair') return true;
+
+  const eventResult = await pool.query(
+    `SELECT 1
+     FROM events
+     WHERE motor_id = $1
+       AND stage <> 'resolved'
+     LIMIT 1`,
+    [motorId]
+  );
+
+  return eventResult.rows.length > 0;
 }
+
 
 function rowToMotor(r) {
   const locType = r.location_type || '';
@@ -185,7 +204,7 @@ router.put(
       }
 
    if (req.user.role === 'technician') {
-    if (!techCanEdit(req.params.id)) return res.status(403).json({ error: 'Technicians can only edit motors that are broken down or under repair.' });
+    if (!(await techCanEdit(motorId))) return res.status(403).json({ error: 'Technicians can only edit motors that are broken down or under repair.' });
     if (b.manualStatus !== oldRow.manual_status) return res.status(403).json({ error: 'Status changes go through the breakdown workflow. Ask an admin.' });
   }
 

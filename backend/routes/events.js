@@ -5,11 +5,7 @@ const { sendAlertSms } = require('../services/sms');
 const { logAudit } = require('../services/audit');
 
 const router = express.Router();
-// Safety net: make sure the column exists even if the migration line was missed
-try {
-  const cols = db.prepare("PRAGMA table_info(events)").all().map(c => c.name);
-  if (!cols.includes('test_report')) db.exec("ALTER TABLE events ADD COLUMN test_report TEXT");
-} catch (e) { console.error('events.test_report column check failed:', e.message); }
+
  // false = test report optional before resolving
 function rowToEvent(r) {
   return {
@@ -20,7 +16,10 @@ function rowToEvent(r) {
     description: r.description,
     urgency: r.urgency,
     stage: r.stage,
-    testReport: r.test_report ? JSON.parse(r.test_report) : null,
+    testReport:
+  typeof r.test_report === 'string'
+    ? JSON.parse(r.test_report)
+    : r.test_report || null,
     repairLocation: r.repair_location,
     repairLocationType: r.repair_location_type || '',
 
@@ -898,9 +897,28 @@ router.post(
       }
 
     // Mandatory for every role: a PASSED test report must be on file before resolving.
-  const rep = event.test_report ? JSON.parse(event.test_report) : null;
-  if (!rep) return res.status(409).json({ error: 'A test report is required before this motor can be resolved.' });
-  if (rep.result !== 'pass') return res.status(409).json({ error: 'The latest test report is FAILED. Record a new test that passes before resolving.' });
+ 
+const rep =
+  typeof event.test_report === 'string'
+    ? JSON.parse(event.test_report)
+    : event.test_report;
+
+if (!rep) {
+  await client.query('ROLLBACK');
+
+  return res.status(409).json({
+    error: 'A test report is required before this motor can be resolved.'
+  });
+}
+
+if (rep.result !== 'pass') {
+  await client.query('ROLLBACK');
+
+  return res.status(409).json({
+    error: 'The latest test report is FAILED. Record a new test that passes before resolving.'
+  });
+}
+
       const now = new Date();
 
       const downtimeHours =
@@ -1012,55 +1030,75 @@ router.post(
 );
 
 
-// REOPEN RESOLVED EVENT
+
+ // REOPEN RESOLVED EVENT
 router.post(
   '/:id/reopen',
   requireAuth,
   requireRole('admin'),
   async (req, res) => {
+    const client = await pool.connect();
+    let transactionStarted = false;
+
     try {
       const eventId = Number(req.params.id);
 
-      const result = await pool.query(
-        'SELECT * FROM events WHERE id = $1',
+      if (!Number.isInteger(eventId) || eventId <= 0) {
+        return res.status(400).json({
+          error: 'Invalid breakdown ID.'
+        });
+      }
+
+      await client.query('BEGIN');
+      transactionStarted = true;
+
+      const result = await client.query(
+        'SELECT * FROM events WHERE id = $1 FOR UPDATE',
         [eventId]
       );
 
       const event = result.rows[0];
 
-
       if (!event) {
+        await client.query('ROLLBACK');
+        transactionStarted = false;
+
         return res.status(404).json({
           error: 'Event not found.'
         });
       }
 
-  db.prepare(`UPDATE events SET stage='in_repair', resolved_at=NULL, downtime_hours=NULL, test_report=NULL, timeline=?, updated_at=? WHERE id=?`)
+      if (event.stage !== 'resolved') {
+        await client.query('ROLLBACK');
+        transactionStarted = false;
+
+        return res.status(409).json({
+          error: 'Only resolved breakdowns can be reopened.'
+        });
+      }
+
       const now = new Date();
 
       const timeline = Array.isArray(event.timeline)
         ? [...event.timeline]
-        : [];
-
+        : typeof event.timeline === 'string'
+          ? JSON.parse(event.timeline || '[]')
+          : [];
 
       timeline.push({
         at: now,
-        text:
-          `Reopened — issue recurred. (${who(req)})`
+        text: `Reopened — issue recurred. (${who(req)})`
       });
 
-
-      await pool.query(
-        `
-        UPDATE events
-        SET
-          stage = 'in_repair',
-          resolved_at = NULL,
-          downtime_hours = NULL,
-          timeline = $1,
-          updated_at = $2
-        WHERE id = $3
-        `,
+      await client.query(
+        `UPDATE events
+         SET stage = 'in_repair',
+             resolved_at = NULL,
+             downtime_hours = NULL,
+             test_report = NULL,
+             timeline = $1,
+             updated_at = $2
+         WHERE id = $3`,
         [
           JSON.stringify(timeline),
           now,
@@ -1068,28 +1106,43 @@ router.post(
         ]
       );
 
+      await client.query('COMMIT');
+      transactionStarted = false;
 
-      await logAudit(req, {
-        entityType: 'events',
-        entityId: eventId,
-        action: 'reopen',
-        summary: 'Reopened after resolution'
-      });
+      try {
+        await logAudit(req, {
+          entityType: 'events',
+          entityId: eventId,
+          action: 'reopen',
+          summary: 'Reopened after resolution'
+        });
+      } catch (auditError) {
+        console.error('Reopen audit error:', auditError);
+      }
 
-
-      res.json({
-        ok: true
-      });
+      return res.json({ ok: true });
 
     } catch (err) {
+      if (transactionStarted) {
+        try {
+          await client.query('ROLLBACK');
+        } catch (rollbackError) {
+          console.error('Reopen rollback error:', rollbackError);
+        }
+      }
+
       console.error('Reopen event error:', err);
 
-      res.status(500).json({
+      return res.status(500).json({
         error: 'Could not reopen the breakdown.'
       });
+
+    } finally {
+      client.release();
     }
   }
 );
+
 
 
 // DELETE SINGLE EVENT
@@ -1211,29 +1264,147 @@ router.post('/bulk-delete', requireAuth,requireRole('admin'), async (req, res) =
     client.release();
   }
 });
-router.post('/:id/test-report', requireAuth, requireRole('admin', 'technician'), (req, res) => {
-  const event = db.prepare('SELECT * FROM events WHERE id = ?').get(req.params.id);
-  if (!event) return res.status(404).json({ error: 'Event not found.' });
-  if (event.stage === 'resolved') return res.status(409).json({ error: 'This breakdown is already resolved.' });
-  const b = req.body || {};
-  if (!['pass', 'fail'].includes(b.result)) return res.status(400).json({ error: 'Choose Pass or Fail.' });
-  const now = new Date().toISOString();
-  const report = {
-    result: b.result,
-    noLoadCurrent: b.noLoadCurrent ?? '',
-    insulationResistance: b.insulationResistance ?? '',
-    vibration: b.vibration ?? '',
-    temperature: b.temperature ?? '',
-    notes: (b.notes || '').trim(),
-    testedBy: who(req),
-    testedAt: now,
-  };
-  const timeline = JSON.parse(event.timeline || '[]');
-  timeline.push({ at: now, text: `Test report recorded: ${b.result.toUpperCase()} (${who(req)}).` });
-  db.prepare('UPDATE events SET test_report=?, timeline=?, updated_at=? WHERE id=?')
-    .run(JSON.stringify(report), JSON.stringify(timeline), now, event.id);
-  logAudit(req, { entityType: 'events', entityId: req.params.id, action: 'test-report', summary: `Test report: ${b.result}` });
-  res.json({ ok: true, event: rowToEvent(db.prepare('SELECT * FROM events WHERE id = ?').get(req.params.id)) });
-});
+
+router.post(
+  '/:id/test-report',
+  requireAuth,
+  requireRole('admin', 'technician'),
+  async (req, res) => {
+    const client = await pool.connect();
+    let transactionStarted = false;
+
+    try {
+      const eventId = Number(req.params.id);
+
+      if (!Number.isInteger(eventId) || eventId <= 0) {
+        return res.status(400).json({
+          error: 'Invalid breakdown ID.'
+        });
+      }
+
+      const b = req.body || {};
+
+      if (!['pass', 'fail'].includes(b.result)) {
+        return res.status(400).json({
+          error: 'Choose Pass or Fail.'
+        });
+      }
+
+      await client.query('BEGIN');
+      transactionStarted = true;
+
+      const result = await client.query(
+        'SELECT * FROM events WHERE id = $1 FOR UPDATE',
+        [eventId]
+      );
+
+      const event = result.rows[0];
+
+      if (!event) {
+        await client.query('ROLLBACK');
+        transactionStarted = false;
+
+        return res.status(404).json({
+          error: 'Event not found.'
+        });
+      }
+
+      if (event.stage === 'resolved') {
+        await client.query('ROLLBACK');
+        transactionStarted = false;
+
+        return res.status(409).json({
+          error: 'This breakdown is already resolved.'
+        });
+      }
+
+      const now = new Date();
+
+      const report = {
+        result: b.result,
+        noLoadCurrent: b.noLoadCurrent ?? '',
+        insulationResistance: b.insulationResistance ?? '',
+        vibration: b.vibration ?? '',
+        temperature: b.temperature ?? '',
+        notes:
+          typeof b.notes === 'string'
+            ? b.notes.trim()
+            : '',
+        testedBy: who(req),
+        testedAt: now.toISOString()
+      };
+
+      const timeline = Array.isArray(event.timeline)
+        ? [...event.timeline]
+        : typeof event.timeline === 'string'
+          ? JSON.parse(event.timeline || '[]')
+          : [];
+
+      timeline.push({
+        at: now,
+        text:
+          `Test report recorded: ${b.result.toUpperCase()} ` +
+          `(${who(req)}).`
+      });
+
+      await client.query(
+        `UPDATE events
+         SET test_report = $1,
+             timeline = $2,
+             updated_at = $3
+         WHERE id = $4`,
+        [
+          JSON.stringify(report),
+          JSON.stringify(timeline),
+          now,
+          eventId
+        ]
+      );
+
+      await client.query('COMMIT');
+      transactionStarted = false;
+
+      try {
+        await logAudit(req, {
+          entityType: 'events',
+          entityId: eventId,
+          action: 'test-report',
+          summary: `Test report: ${b.result}`
+        });
+      } catch (auditError) {
+        console.error('Test report audit error:', auditError);
+      }
+
+      const updatedResult = await pool.query(
+        'SELECT * FROM events WHERE id = $1',
+        [eventId]
+      );
+
+      return res.json({
+        ok: true,
+        event: rowToEvent(updatedResult.rows[0])
+      });
+
+    } catch (err) {
+      if (transactionStarted) {
+        try {
+          await client.query('ROLLBACK');
+        } catch (rollbackError) {
+          console.error('Test report rollback error:', rollbackError);
+        }
+      }
+
+      console.error('Test report error:', err);
+
+      return res.status(500).json({
+        error: 'Could not save the test report.'
+      });
+
+    } finally {
+      client.release();
+    }
+  }
+);
+
 
 module.exports = router;

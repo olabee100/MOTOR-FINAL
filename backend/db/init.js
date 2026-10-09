@@ -12,6 +12,11 @@ const pool = new Pool({
     : false
 });
 
+pool.on('error', (err) => {
+  console.error('Unexpected PostgreSQL pool error:', err);
+});
+
+
 async function initDb() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
@@ -143,25 +148,30 @@ async function initDb() {
 }
 
 
+
 async function ensureColumn(table, column, declaration) {
   const result = await pool.query(
     `
     SELECT column_name
     FROM information_schema.columns
-    WHERE table_name = $1
+    WHERE table_schema = 'public'
+      AND table_name = $1
       AND column_name = $2
     `,
     [table, column]
   );
 
   if (result.rows.length === 0) {
+    // Table and column names are internal constants,
+    // not values supplied by users.
     await pool.query(
-      `ALTER TABLE ${table} ADD COLUMN ${column} ${declaration}`
+      `ALTER TABLE public.${table} ADD COLUMN ${column} ${declaration}`
     );
 
     console.log(`Migrated: added ${table}.${column}`);
   }
 }
+
 
 
 async function ensureAdmin() {
