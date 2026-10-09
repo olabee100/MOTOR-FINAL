@@ -5,6 +5,35 @@ const { logAudit, diffSummary } = require('../services/audit');
 
 const router = express.Router();
 
+const pool = require('../db/pool'); // use whatever your file exports
+
+const asArr = (v) => {
+  if (!v) return [];
+  if (Array.isArray(v)) return v;
+  try { const p = JSON.parse(v); return Array.isArray(p) ? p : []; } catch { return []; }
+};
+const asObj = (v) => {
+  if (!v) return null;
+  if (typeof v === 'object') return v;
+  try { return JSON.parse(v); } catch { return null; }
+};
+const toIso = (v) => { const d = new Date(v); return isNaN(d.getTime()) ? null : d.toISOString(); };
+// Pulls "Name (role)" out of the end of a timeline line
+const byFromText = (t) => {
+  const s = String(t || '');
+  const m = s.match(/\(([^()]*\([^()]*\))\)\.?\s*$/) || s.match(/ by ([^()]*\([^()]*\))\.?\s*$/);
+  return m ? m[1].trim() : '';
+};
+const readings = (r) => {
+  const p = [];
+  if (r.noLoadCurrent !== '' && r.noLoadCurrent != null) p.push(`no-load ${r.noLoadCurrent} A`);
+  if (r.insulationResistance !== '' && r.insulationResistance != null) p.push(`insulation ${r.insulationResistance} MΩ`);
+  if (r.vibration !== '' && r.vibration != null) p.push(`vibration ${r.vibration} mm/s`);
+  if (r.temperature !== '' && r.temperature != null) p.push(`temp ${r.temperature} °C`);
+  if (r.notes) p.push(`notes: ${r.notes}`);
+  return p.join(', ');
+};
+
 // A technician may only touch a motor that is currently broken down or under repair.
 
 
@@ -727,5 +756,77 @@ router.post(
     }
   }
 );
+
+router.get('/:id/history', requireAuth, async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { rows: mrows } = await pool.query('SELECT * FROM motors WHERE id = $1', [id]);
+    if (!mrows.length) return res.status(404).json({ error: 'Motor not found.' });
+    const m = mrows[0];
+
+    const entries = [];
+    const add = (at, type, by, summary, extra = {}) => {
+      const t = toIso(at);
+      if (t) entries.push({ at: t, type, by: by || '', summary: summary || '', ...extra });
+    };
+
+    // 1. Changes made to the motor record itself (who / what / when)
+    const { rows: motorAudit } = await pool.query(
+      "SELECT created_at, user_name, action, summary FROM audit_log WHERE entity_type = 'motors' AND entity_id::text = $1",
+      [String(id)]
+    );
+    motorAudit.forEach(a => add(a.created_at, 'Motor record', a.user_name, a.summary || a.action));
+    if (!motorAudit.some(a => a.action === 'create')) {
+      add(m.created_at, 'Motor record', '', `Motor "${m.tag}" added to the system`);
+    }
+
+    // 2. Test report saved on the motor while it was a standby spare
+    const spareTest = asObj(m.test_report);
+    if (spareTest) {
+      const rd = readings(spareTest);
+      add(spareTest.testedAt, 'Spare test', spareTest.testedBy,
+        `Spare test report: ${String(spareTest.result).toUpperCase()}${rd ? ' — ' + rd : ''}`);
+    }
+
+    // 3. Every breakdown / repair on this motor
+    const { rows: evs } = await pool.query('SELECT * FROM events WHERE motor_id = $1 ORDER BY reported_at', [id]);
+    evs.forEach(ev => {
+      const tag = `Breakdown #${ev.id}`;
+      const timeline = asArr(ev.timeline);
+      const first = timeline.find(t => /^Breakdown reported/.test(t.text || ''));
+      add(ev.reported_at, 'Breakdown', (first && byFromText(first.text)) || ev.reported_by,
+        `${tag} reported (${ev.urgency} urgency): ${ev.description || 'no description'}`, { eventId: ev.id });
+      timeline.forEach(t => {
+        if (/^Breakdown reported/.test(t.text || '')) return;
+        add(t.at, 'Repair', byFromText(t.text), `${tag}: ${t.text}`, { eventId: ev.id });
+      });
+      const rep = asObj(ev.test_report);
+      if (rep) {
+        const rd = readings(rep);
+        if (rd) add(rep.testedAt, 'Test readings', rep.testedBy,
+          `${tag} latest test (${String(rep.result).toUpperCase()}): ${rd}`, { eventId: ev.id });
+      }
+    });
+
+    // 4. Times this motor was installed as a spare for another motor
+    const { rows: swapEvs } = await pool.query(
+      `SELECT e.id, e.motor_swaps, m2.tag AS broken_tag
+         FROM events e JOIN motors m2 ON m2.id = e.motor_id
+        WHERE e.motor_swaps IS NOT NULL AND e.motor_swaps::text NOT IN ('[]', '')`
+    );
+    swapEvs.forEach(e => asArr(e.motor_swaps).forEach(s => {
+      if (String(s.motorId) === String(id)) {
+        add(s.at, 'Used as spare', s.by,
+          `Installed as a spare in place of ${e.broken_tag} (breakdown #${e.id})`, { eventId: e.id });
+      }
+    }));
+
+    entries.sort((a, b) => a.at.localeCompare(b.at));
+    res.json({
+      motor: { id: m.id, tag: m.tag, name: m.name, department: m.department, kw: m.hp, voltage: m.voltage, rpm: m.rpm },
+      entries,
+    });
+  } catch (e) { next(e); }
+});
 
 module.exports = router;

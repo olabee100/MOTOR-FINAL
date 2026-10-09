@@ -592,6 +592,51 @@ body.not-admin #ed-deleteBtn, body.not-admin #ed-reopenBtn, body.not-admin #mDel
 (function(){
 "use strict";
 
+async function downloadMotorHistory(m, format){
+  // open the print window immediately so pop-up blockers allow it
+  const w = format==='pdf' ? window.open('', '_blank') : null;
+  try{
+    const data = await apiFetch('/api/motors/'+m.id+'/history');
+
+    if(format==='csv'){
+      exportCsv('motor-history-'+m.tag+'-'+new Date().toISOString().slice(0,10)+'.csv',
+        ['Date','Time','Category','Who','What happened','Breakdown #'],
+        data.entries.map(e=>{ const d=new Date(e.at); return [d.toLocaleDateString('en-GB'), d.toLocaleTimeString('en-GB'), e.type, e.by, e.summary, e.eventId||'']; }));
+      return;
+    }
+
+    if(!w){ alert('Allow pop-ups for this site to print the history.'); return; }
+    const when = iso => { const d=new Date(iso); return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+'<br>'+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); };
+    const rows = data.entries.map(e=>'<tr><td class="d">'+when(e.at)+'</td><td>'+escapeHtml(e.type)+'</td><td>'+escapeHtml(e.by||'—')+'</td><td>'+escapeHtml(e.summary)+'</td></tr>').join('');
+    w.document.write(
+      '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Motor history — '+escapeHtml(m.tag)+'</title><style>'+
+      'body{font-family:Arial,sans-serif;font-size:12px;color:#222;margin:24px;}'+
+      'h1{font-size:20px;margin:0 0 4px;} .sub{color:#666;margin-bottom:14px;}'+
+      '.info{display:grid;grid-template-columns:repeat(3,1fr);gap:6px 18px;border:1px solid #ccc;padding:10px 12px;margin-bottom:16px;}'+
+      '.info span{display:block;color:#777;font-size:10px;text-transform:uppercase;} '+
+      'table{width:100%;border-collapse:collapse;} th{background:#eee;text-align:left;} th,td{border:1px solid #ccc;padding:6px 8px;vertical-align:top;}'+
+      'td.d{white-space:nowrap;width:90px;} thead{display:table-header-group;} tr{page-break-inside:avoid;}'+
+      '</style></head><body>'+
+      '<h1>Motor history — '+escapeHtml(m.tag)+'</h1>'+
+      '<div class="sub">'+escapeHtml(m.name)+' · printed '+new Date().toLocaleString('en-GB')+' by '+escapeHtml(currentUser?currentUser.name:'')+'</div>'+
+      '<div class="info">'+
+        '<div><span>Department</span>'+escapeHtml(m.department||'—')+'</div>'+
+        '<div><span>Rating</span>'+m.kw+' kW · '+m.voltage+' V · '+m.rpm+' rpm</div>'+
+        '<div><span>Current status</span>'+escapeHtml(computeMotorStatus(m))+'</div>'+
+        '<div style="grid-column:span 3;"><span>Current location</span>'+escapeHtml(currentLocationFor(m))+'</div>'+
+      '</div>'+
+      '<table><thead><tr><th>Date / time</th><th>Category</th><th>Who</th><th>What happened</th></tr></thead><tbody>'+
+      (rows || '<tr><td colspan="4">No history recorded.</td></tr>')+
+      '</tbody></table></body></html>'
+    );
+    w.document.close();
+    setTimeout(()=>{ w.focus(); w.print(); }, 400);
+  }catch(e){
+    if(w) w.close();
+    alert('Could not load history: '+e.message);
+  }
+}
+
 function spareTestReportHtml(m){
   const r = m.testReport;
   if(computeMotorStatus(m)!=='standby'){
@@ -2163,12 +2208,15 @@ function openMotorDrawer(id){
          motorSwapHistoryHtml(m)+
       '<div class="drawer-section"><h4>Change history — who, what, when</h4><div class="timeline" id="mdAuditLog"><div class="empty-note" style="padding:10px 0;">Loading…</div></div></div>'+
       '</div>'+
+            '<div style="padding:0 20px 12px; display:flex; gap:8px;"><button class="btn" style="flex:1;" id="mdHistCsv">⬇ History (CSV)</button><button class="btn" style="flex:1;" id="mdHistPdf">🖨 History (PDF)</button></div>'+
       '<div style="padding:0 20px 20px;"><button class="btn" style="width:100%;" id="mdEdit">Edit motor details</button></div>';
   document.getElementById('motorDrawer').innerHTML = html;
   document.getElementById('motorDrawer').classList.add('open');
   document.getElementById('motorDrawerOverlay').classList.add('open');
   document.getElementById('mdClose').onclick = closeMotorDrawer;
   document.getElementById('mdEdit').onclick = ()=>{ closeMotorDrawer(); openMotorModal(id); };
+    document.getElementById('mdHistCsv').onclick = ()=> downloadMotorHistory(m, 'csv');
+  document.getElementById('mdHistPdf').onclick = ()=> downloadMotorHistory(m, 'pdf');
     const trBtn = document.getElementById('md-tr-saveBtn');
   if(trBtn) trBtn.onclick = async ()=>{
     const result = document.getElementById('md-tr-result').value;
