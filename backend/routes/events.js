@@ -739,19 +739,30 @@ router.post(
         });
       }
 
-      const spareRep = spareMotor.test_report ?? null;
+      
+
+const spareRep =
+  typeof spareMotor.test_report === 'string'
+    ? JSON.parse(spareMotor.test_report)
+    : spareMotor.test_report;
 
 if (!spareRep) {
+  await client.query('ROLLBACK');
+
   return res.status(409).json({
     error: `${spareMotor.tag} has no test report. Record a passing test before installation.`
   });
 }
 
 if (spareRep.result !== 'pass') {
+  await client.query('ROLLBACK');
+
   return res.status(409).json({
     error: `${spareMotor.tag}'s latest test did not pass. Record a passing test before installation.`
   });
 }
+
+
 
 
       const now = new Date();
@@ -812,6 +823,8 @@ if (spareRep.result !== 'pass') {
           updated_at = $4
         WHERE id = $5
         `,
+
+        
         [
           brokenMotor.location_type,
           brokenMotor.placement_detail,
@@ -820,6 +833,22 @@ if (spareRep.result !== 'pass') {
           spareMotor.id
         ]
       );
+
+      
+await client.query(
+  `UPDATE motors
+   SET
+     manual_status = 'repair',
+     condition_notes = $1,
+     updated_at = $2
+   WHERE id = $3`,
+  [
+    `Removed from service — replaced by ${spareMotor.tag}`,
+    now,
+    brokenMotor.id
+  ]
+);
+
 
 
       await client.query('COMMIT');
