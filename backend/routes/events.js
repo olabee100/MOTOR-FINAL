@@ -739,6 +739,20 @@ router.post(
         });
       }
 
+      const spareRep = spareMotor.test_report ?? null;
+
+if (!spareRep) {
+  return res.status(409).json({
+    error: `${spareMotor.tag} has no test report. Record a passing test before installation.`
+  });
+}
+
+if (spareRep.result !== 'pass') {
+  return res.status(409).json({
+    error: `${spareMotor.tag}'s latest test did not pass. Record a passing test before installation.`
+  });
+}
+
 
       const now = new Date();
 

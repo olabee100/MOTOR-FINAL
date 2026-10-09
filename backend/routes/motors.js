@@ -56,6 +56,8 @@ function rowToMotor(r) {
     standbyCategory: r.standby_category || 'new',
     condition: r.condition_notes,
 
+    testReport: r.test_report ?? null,
+
     createdAt: r.created_at,
     updatedAt: r.updated_at
   };
@@ -262,6 +264,16 @@ router.put(
           motorId
         ]
       );
+
+      if (
+  b.manualStatus === 'standby' &&
+  oldRow.manual_status !== 'standby'
+) {
+  await pool.query(
+    'UPDATE motors SET test_report = NULL WHERE id = $1',
+    [motorId]
+  );
+}
 
       const summary = diffSummary(
         oldRow,
@@ -614,5 +626,79 @@ router.post('/bulk-delete', requireAuth,requireRole('admin'), async (req, res) =
   }
 });
 
+router.post(
+  '/:id/test-report',
+  requireAuth,
+  requireRole('admin', 'technician', 'storekeeper'),
+  async (req, res) => {
+    try {
+      const motorId = Number(req.params.id);
+
+      if (!Number.isInteger(motorId) || motorId <= 0) {
+        return res.status(400).json({ error: 'Invalid motor ID.' });
+      }
+
+      const result = await pool.query(
+        'SELECT id, tag, manual_status FROM motors WHERE id = $1',
+        [motorId]
+      );
+
+      const motor = result.rows[0];
+
+      if (!motor) {
+        return res.status(404).json({ error: 'Motor not found.' });
+      }
+
+      if (motor.manual_status !== 'standby') {
+        return res.status(409).json({
+          error: 'Test reports on this screen are for spare motors on standby.'
+        });
+      }
+
+      const b = req.body || {};
+
+      if (!['pass', 'fail'].includes(b.result)) {
+        return res.status(400).json({
+          error: 'Choose Pass or Fail.'
+        });
+      }
+
+      const report = {
+        result: b.result,
+        noLoadCurrent: b.noLoadCurrent ?? '',
+        insulationResistance: b.insulationResistance ?? '',
+        vibration: b.vibration ?? '',
+        temperature: b.temperature ?? '',
+        notes: String(b.notes || '').trim(),
+        testedBy: `${req.user.name} (${req.user.role})`,
+        testedAt: new Date().toISOString()
+      };
+
+      await pool.query(
+        `UPDATE motors
+         SET test_report = $1::jsonb,
+             updated_at = NOW()
+         WHERE id = $2`,
+        [JSON.stringify(report), motorId]
+      );
+
+      await logAudit(req, {
+        entityType: 'motors',
+        entityId: motor.id,
+        entityLabel: motor.tag,
+        action: 'test-report',
+        summary: `Spare test report: ${b.result.toUpperCase()}`
+      });
+
+      return res.json({ ok: true, testReport: report });
+    } catch (err) {
+      console.error('Save spare test report error:', err);
+
+      return res.status(500).json({
+        error: 'Could not save the test report.'
+      });
+    }
+  }
+);
 
 module.exports = router;
