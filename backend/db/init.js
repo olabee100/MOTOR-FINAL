@@ -135,7 +135,7 @@ async function initDb() {
     `JSONB DEFAULT '[]'::jsonb`
   );
 
-  await ensureColumn('events', 'test_report', "TEXT");
+  await ensureColumn('events', 'test_report', `TEXT DEFAULT ''`);
 
   await ensureAdmin();
 
