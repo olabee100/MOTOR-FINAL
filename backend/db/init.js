@@ -109,6 +109,8 @@ async function initDb() {
     `TEXT DEFAULT ''`
   );
 
+  
+
   await ensureColumn(
     'motors',
     'placement_detail',
@@ -132,6 +134,8 @@ async function initDb() {
     'motor_swaps',
     `JSONB DEFAULT '[]'::jsonb`
   );
+
+  await ensureColumn('events', 'test_report', "TEXT");
 
   await ensureAdmin();
 

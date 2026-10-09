@@ -378,7 +378,7 @@ router.post(
 
 
 // DELETE SINGLE SPARE
-router.delete('/:id', requireAuth, async (req, res) => {
+router.delete('/:id', requireAuth,requireRole('admin'), async (req, res) => {
   try {
     const spareId = Number(req.params.id);
 
@@ -419,7 +419,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
 
 
 // BULK DELETE
-router.post('/bulk-delete', requireAuth, async (req, res) => {
+router.post('/bulk-delete', requireAuth,requireRole('admin'), async (req, res) => {
   const ids = Array.isArray(req.body?.ids)
     ? req.body.ids
     : [];

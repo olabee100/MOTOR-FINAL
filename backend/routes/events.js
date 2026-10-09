@@ -6,7 +6,7 @@ const { logAudit } = require('../services/audit');
 
 const router = express.Router();
 
-
+const REQUIRE_TEST_REPORT = true; // false = test report optional before resolving
 function rowToEvent(r) {
   return {
     id: r.id,
@@ -16,7 +16,7 @@ function rowToEvent(r) {
     description: r.description,
     urgency: r.urgency,
     stage: r.stage,
-
+    testReport: r.test_report ? JSON.parse(r.test_report) : null,
     repairLocation: r.repair_location,
     repairLocationType: r.repair_location_type || '',
 
@@ -253,7 +253,9 @@ router.put(
           error: 'Event not found.'
         });
       }
-
+  if (req.user.role === 'technician' && row.stage === 'resolved') {
+    return res.status(403).json({ error: 'Only an admin can edit a resolved breakdown record.' });
+  }
 
       const next = {
         stage:
@@ -888,7 +890,12 @@ router.post(
         });
       }
 
-
+  if (REQUIRE_TEST_REPORT) {
+    const rep = event.test_report ? JSON.parse(event.test_report) : null;
+    if (!rep || rep.result !== 'pass') {
+      return res.status(409).json({ error: 'Record a passing test report before returning this motor to service.' });
+    }
+  }
       const now = new Date();
 
       const downtimeHours =
@@ -1004,7 +1011,7 @@ router.post(
 router.post(
   '/:id/reopen',
   requireAuth,
-  requireRole('admin', 'technician'),
+  requireRole('admin'),
   async (req, res) => {
     try {
       const eventId = Number(req.params.id);
@@ -1023,7 +1030,7 @@ router.post(
         });
       }
 
-
+  db.prepare(`UPDATE events SET stage='in_repair', resolved_at=NULL, downtime_hours=NULL, test_report=NULL, timeline=?, updated_at=? WHERE id=?`)
       const now = new Date();
 
       const timeline = Array.isArray(event.timeline)
@@ -1081,7 +1088,7 @@ router.post(
 
 
 // DELETE SINGLE EVENT
-router.delete('/:id', requireAuth, async (req, res) => {
+router.delete('/:id', requireAuth,requireRole('admin'), async (req, res) => {
   try {
     const eventId = Number(req.params.id);
 
@@ -1139,7 +1146,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
 
 
 // BULK DELETE EVENTS
-router.post('/bulk-delete', requireAuth, async (req, res) => {
+router.post('/bulk-delete', requireAuth,requireRole('admin'), async (req, res) => {
   const ids = Array.isArray(req.body?.ids)
     ? req.body.ids
     : [];
@@ -1199,6 +1206,29 @@ router.post('/bulk-delete', requireAuth, async (req, res) => {
     client.release();
   }
 });
-
+router.post('/:id/test-report', requireAuth, requireRole('admin', 'technician'), (req, res) => {
+  const event = db.prepare('SELECT * FROM events WHERE id = ?').get(req.params.id);
+  if (!event) return res.status(404).json({ error: 'Event not found.' });
+  if (event.stage === 'resolved') return res.status(409).json({ error: 'This breakdown is already resolved.' });
+  const b = req.body || {};
+  if (!['pass', 'fail'].includes(b.result)) return res.status(400).json({ error: 'Choose Pass or Fail.' });
+  const now = new Date().toISOString();
+  const report = {
+    result: b.result,
+    noLoadCurrent: b.noLoadCurrent ?? '',
+    insulationResistance: b.insulationResistance ?? '',
+    vibration: b.vibration ?? '',
+    temperature: b.temperature ?? '',
+    notes: (b.notes || '').trim(),
+    testedBy: who(req),
+    testedAt: now,
+  };
+  const timeline = JSON.parse(event.timeline || '[]');
+  timeline.push({ at: now, text: `Test report recorded: ${b.result.toUpperCase()} (${who(req)}).` });
+  db.prepare('UPDATE events SET test_report=?, timeline=?, updated_at=? WHERE id=?')
+    .run(JSON.stringify(report), JSON.stringify(timeline), now, event.id);
+  logAudit(req, { entityType: 'events', entityId: req.params.id, action: 'test-report', summary: `Test report: ${b.result}` });
+  res.json({ ok: true, event: rowToEvent(db.prepare('SELECT * FROM events WHERE id = ?').get(req.params.id)) });
+});
 
 module.exports = router;

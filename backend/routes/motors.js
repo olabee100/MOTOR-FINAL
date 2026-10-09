@@ -5,6 +5,13 @@ const { logAudit, diffSummary } = require('../services/audit');
 
 const router = express.Router();
 
+// A technician may only touch a motor that is currently broken down or under repair.
+function techCanEdit(motorId) {
+  const m = db.prepare('SELECT manual_status FROM motors WHERE id = ?').get(motorId);
+  if (!m) return false;
+  if (m.manual_status === 'repair') return true;
+  return !!db.prepare("SELECT 1 FROM events WHERE motor_id = ? AND stage != 'resolved'").get(motorId);
+}
 
 function rowToMotor(r) {
   const locType = r.location_type || '';
@@ -59,7 +66,7 @@ router.get('/', requireAuth, async (req, res) => {
 router.post(
   '/',
   requireAuth,
-  requireRole('admin', 'technician'),
+  requireRole('admin'),
   async (req, res) => {
     try {
       const b = req.body || {};
@@ -177,6 +184,11 @@ router.put(
         });
       }
 
+   if (req.user.role === 'technician') {
+    if (!techCanEdit(req.params.id)) return res.status(403).json({ error: 'Technicians can only edit motors that are broken down or under repair.' });
+    if (b.manualStatus !== oldRow.manual_status) return res.status(403).json({ error: 'Status changes go through the breakdown workflow. Ask an admin.' });
+  }
+
       const tag = (b.tag || '').trim();
 
       // Check duplicate tag excluding current motor
@@ -285,7 +297,7 @@ router.put(
 router.post(
   '/bulk',
   requireAuth,
-  requireRole('admin', 'technician'),
+  requireRole('admin'),
   async (req, res) => {
     const client = await pool.connect();
 
@@ -408,7 +420,7 @@ console.log('BULK ROWS:', JSON.stringify(rows, null, 2));
 
 
 // DELETE SINGLE MOTOR
-router.delete('/:id', requireAuth, async (req, res) => {
+router.delete('/:id', requireAuth,requireRole('admin'), async (req, res) => {
   const client = await pool.connect();
 
   try {
@@ -490,7 +502,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
 
 
 // BULK DELETE
-router.post('/bulk-delete', requireAuth, async (req, res) => {
+router.post('/bulk-delete', requireAuth,requireRole('admin'), async (req, res) => { 
   const ids = Array.isArray(req.body?.ids)
     ? req.body.ids
     : [];
