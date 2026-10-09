@@ -274,6 +274,14 @@ td.num{font-family:var(--font-mono); text-align:right;}
 .searchable-item:last-child{border-bottom:none;}
 .searchable-item:hover{background:var(--surface-2);}
 .searchable-item .sl-sub{font-size:11px; color:var(--text-faint); margin-top:1px;}
+body.not-admin #addMotorBtn, body.not-admin #bulkMotorBtn, body.not-admin #importMotorsBtn,
+body.not-admin #addSpareMotorBtn, body.not-admin #bulkSpareMotorBtn, body.not-admin #importSpareMotorsBtn,
+body.not-admin #motorsBulkBar, body.not-admin #sparesBulkBar, body.not-admin #eventsBulkBar,
+body.not-admin #motorsSelectAll, body.not-admin #sparesSelectAll, body.not-admin #eventsSelectAll,
+body.not-admin [data-select-motor], body.not-admin [data-select-spare], body.not-admin [data-select-event],
+body.not-admin [data-del-event], body.not-admin [data-del-spare],
+body.not-admin #ed-deleteBtn, body.not-admin #ed-reopenBtn, body.not-admin #mDelete, body.not-admin #sDelete
+{ display:none !important; }
 </style>
 </head>
 <body>
@@ -571,6 +579,28 @@ td.num{font-family:var(--font-mono); text-align:right;}
 <script>
 (function(){
 "use strict";
+function testReportSummary(r){
+  const row = (k,v)=> (v!=='' && v!=null) ? '<div><span class="k">'+k+'</span><span class="v">'+escapeHtml(String(v))+'</span></div>' : '';
+  return '<div style="margin-bottom:8px;"><span class="badge '+(r.result==='pass'?'running':'breakdown')+'">'+(r.result==='pass'?'PASSED':'FAILED')+'</span> '+
+    '<span style="font-size:11.5px; color:var(--text-faint);">'+escapeHtml(r.testedBy||'')+' · '+fmtDateTime(r.testedAt)+'</span></div>'+
+    '<div class="kv">'+row('No-load current (A)',r.noLoadCurrent)+row('Insulation resistance (MΩ)',r.insulationResistance)+row('Vibration (mm/s)',r.vibration)+row('Temperature (°C)',r.temperature)+row('Notes',r.notes)+'</div>';
+}
+function testReportHtml(ev){
+  const r = ev.testReport;
+  return (r ? testReportSummary(r) : '<div class="empty-note" style="padding:6px 0;">No test report yet. One is required before this motor can go back into service.</div>')+
+    '<details style="margin-top:10px;"><summary style="cursor:pointer; font-size:12.5px; color:var(--wheat);">'+(r?'Record a new test':'Record test report')+'</summary>'+
+    '<div style="margin-top:10px;">'+
+      '<div class="field"><label>Result *</label><select id="ed-tr-result"><option value="">— choose —</option><option value="pass">Pass</option><option value="fail">Fail</option></select></div>'+
+      '<div class="grid2">'+
+        '<div class="field"><label>No-load current (A)</label><input id="ed-tr-current" type="number" step="0.01"></div>'+
+        '<div class="field"><label>Insulation resistance (MΩ)</label><input id="ed-tr-ir" type="number" step="0.01"></div>'+
+        '<div class="field"><label>Vibration (mm/s)</label><input id="ed-tr-vib" type="number" step="0.01"></div>'+
+        '<div class="field"><label>Temperature (°C)</label><input id="ed-tr-temp" type="number" step="0.1"></div>'+
+      '</div>'+
+      '<div class="field"><label>Notes</label><textarea id="ed-tr-notes" rows="2" placeholder="e.g. Ran 30 min on test bench, no abnormal noise"></textarea></div>'+
+      '<button class="btn btn-primary btn-sm" id="ed-tr-saveBtn">Save test report</button>'+
+    '</div></details>';
+}
 
 /* ============================= AUTH + API LAYER ============================= */
 const API = ''; // same origin
@@ -715,6 +745,7 @@ function onLoggedIn(){
   startPolling();
 }
 function applyRolePermissions(){
+   document.body.classList.toggle('not-admin', currentUser.role !== 'admin');
   const role = currentUser.role;
   const canManageMotors = role==='admin' || role==='technician';
   const canManageSpares = role==='admin' || role==='storekeeper';
@@ -894,6 +925,12 @@ function computeMotorStatus(m){
   if(m.manualStatus === 'repair') return 'repair';
   return 'running';
 }
+function canEditMotor(m){
+  if(!currentUser) return false;
+  if(currentUser.role==='admin') return true;
+  if(currentUser.role==='technician'){ const st = computeMotorStatus(m); return st==='breakdown' || st==='repair'; }
+  return false;
+}
 function currentLocationFor(m){
   const openEv = state.events.filter(e=>e.motorId===m.id && isEventOpen(e)).sort((a,b)=>new Date(b.reportedAt)-new Date(a.reportedAt))[0];
   if(openEv && openEv.stage==='in_repair' && openEv.repairLocationType) return openEv.repairLocationType + (openEv.repairLocation ? ' — '+openEv.repairLocation : '');
@@ -1043,7 +1080,7 @@ function renderMotors(){
       '<td class="mono">'+m.kw+' kW · '+m.rpm+' rpm</td>'+
       '<td><span class="badge '+st+'">'+st+'</span></td>'+
       '<td style="max-width:190px;"><div class="cell-title" style="font-size:12.5px;">'+escapeHtml(currentLocationFor(m))+'</div></td>'+
-      '<td><button class="btn btn-sm btn-ghost" data-edit-motor="'+m.id+'">Edit</button></td>'+
+            '<td>'+(canEditMotor(m)?'<button class="btn btn-sm btn-ghost" data-edit-motor="'+m.id+'">Edit</button>':'')+'</td>'+
       '</tr>';
   }).join('') : '<tr><td colspan="8"><div class="empty-note">No motors match these filters.</div></td></tr>';
 
@@ -1470,6 +1507,8 @@ document.getElementById('modalOverlay').addEventListener('click', e=>{ if(e.targ
 
 function openMotorModal(id){
   const m = id ? motorById(id) : null;
+    if(m && !canEditMotor(m)){ alert('Only an admin can edit a motor that is running, on standby or decommissioned. Technicians can edit motors that are broken down or under repair.'); return; }
+  if(!m && currentUser.role!=='admin'){ alert('Only an admin can add motors.'); return; }
   const depts = ['Cleaning','Milling','Sifting','Conveying','Packing','Utilities','Other'];
   const locTypes = ['Mill B','Mill C','Mill D','Mill E','Mill F','Bran Packing','Flour Packing','Utilities','Internal workshop','External workshop','Container','Store','Vendor','Other'];
   openModal(
@@ -1499,6 +1538,7 @@ function openMotorModal(id){
   );
   document.getElementById('mClose').onclick = closeModal;
   document.getElementById('mCancel').onclick = closeModal;
+    if(currentUser.role!=='admin') document.getElementById('f-status').disabled = true;
   document.getElementById('f-status').addEventListener('change', (e)=>{
     document.getElementById('f-standbyCatWrap').style.display = e.target.value==='standby' ? 'block' : 'none';
     if(e.target.value==='repair'){
@@ -1990,6 +2030,7 @@ function openMotorDrawer(id){
   document.getElementById('motorDrawerOverlay').classList.add('open');
   document.getElementById('mdClose').onclick = closeMotorDrawer;
   document.getElementById('mdEdit').onclick = ()=>{ closeMotorDrawer(); openMotorModal(id); };
+    if(!canEditMotor(m)) document.getElementById('mdEdit').style.display = 'none';
   document.querySelectorAll('#motorDrawer [data-hist-event]').forEach(el=> el.onclick = ()=>{ closeMotorDrawer(); openEventDrawer(el.dataset.histEvent); });
 
   apiFetch('/api/audit?entityType=motors&entityId='+id+'&limit=25').then(rows=>{
@@ -2061,6 +2102,7 @@ function renderEventDrawerBody(ev, m, canEdit){
         '<div id="ed-swapsList">'+(ev.motorSwaps&&ev.motorSwaps.length ? ev.motorSwaps.map(s=>'<div class="row-item" style="padding:6px 0;"><div class="main-txt t1">'+escapeHtml(s.tag)+'</div><span class="side" style="font-size:11px;">'+fmtDate(s.at)+'</span></div>').join('') : '<div class="empty-note" style="padding:6px 0;">No spare motor swapped in yet.</div>')+'</div>'+
         (standbyOptions.length ? '<div class="searchable-wrap" style="display:flex; gap:8px; margin-top:8px;"><div class="searchable-wrap" style="flex:1;"><input type="text" id="ed-swap-search" placeholder="Search standby motor by tag or name…" autocomplete="off"><input type="hidden" id="ed-swapSel"><div class="searchable-list" id="ed-swap-list"></div></div><button class="btn btn-sm" id="ed-swapBtn">Install</button></div>' : '<div class="empty-note" style="padding:6px 0;">No standby spare motors available right now.</div>')+
         '</div>'+
+                '<div class="drawer-section"><h4>Test report</h4>'+testReportHtml(ev)+'</div>'+
         '<div class="drawer-section"><button class="btn" style="width:100%; border-color:var(--moss); color:var(--moss);" id="ed-resolveBtn">Mark resolved — motor is back in service</button></div>'
       ) : (
         '<div class="drawer-section"><h4>Resolved</h4><div class="kv">'+
@@ -2068,6 +2110,7 @@ function renderEventDrawerBody(ev, m, canEdit){
         '<div><span class="k">Total downtime</span><span class="v">'+downtimeHoursOf(ev).toFixed(1)+' hours</span></div>'+
         '</div></div>'+
         (ev.motorSwaps&&ev.motorSwaps.length ? '<div class="drawer-section"><h4>Spare motors used</h4>'+ev.motorSwaps.map(s=>'<div class="row-item" style="padding:6px 0;"><div class="main-txt t1">'+escapeHtml(s.tag)+'</div><span class="side" style="font-size:11px;">'+fmtDate(s.at)+'</span></div>').join('')+'</div>' : '')+
+                '<div class="drawer-section"><h4>Test report</h4>'+testReportHtml(ev)+'</div>'+
         '<div class="drawer-section"><button class="btn btn-sm" id="ed-reopenBtn">↺ Reopen — issue recurred</button></div>'
       ))+
       '<div class="drawer-section"><h4>Timeline</h4><div class="timeline">'+
@@ -2131,6 +2174,21 @@ function renderEventDrawerBody(ev, m, canEdit){
         await refreshInPlace();
       }catch(e){ alert('Could not record swap: ' + e.message); }
     };
+        document.getElementById('ed-tr-saveBtn').onclick = async ()=>{
+      const result = document.getElementById('ed-tr-result').value;
+      if(!result){ alert('Choose Pass or Fail.'); return; }
+      try{
+        await apiFetch('/api/events/'+ev.id+'/test-report', {method:'POST', body:JSON.stringify({
+          result,
+          noLoadCurrent: document.getElementById('ed-tr-current').value.trim(),
+          insulationResistance: document.getElementById('ed-tr-ir').value.trim(),
+          vibration: document.getElementById('ed-tr-vib').value.trim(),
+          temperature: document.getElementById('ed-tr-temp').value.trim(),
+          notes: document.getElementById('ed-tr-notes').value.trim(),
+        })});
+        await refreshInPlace();
+      }catch(e){ alert('Could not save test report: ' + e.message); }
+    };
     document.getElementById('ed-resolveBtn').onclick = async ()=>{
       try{
         await resolveEvent(ev.id);
@@ -2177,6 +2235,7 @@ tickClock(); setInterval(tickClock, 30000);
 initAuth();
 
 })();
+
 </script>
 </body>
 </html>
