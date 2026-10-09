@@ -5,7 +5,11 @@ const { sendAlertSms } = require('../services/sms');
 const { logAudit } = require('../services/audit');
 
 const router = express.Router();
-
+// Safety net: make sure the column exists even if the migration line was missed
+try {
+  const cols = db.prepare("PRAGMA table_info(events)").all().map(c => c.name);
+  if (!cols.includes('test_report')) db.exec("ALTER TABLE events ADD COLUMN test_report TEXT");
+} catch (e) { console.error('events.test_report column check failed:', e.message); }
  // false = test report optional before resolving
 function rowToEvent(r) {
   return {
