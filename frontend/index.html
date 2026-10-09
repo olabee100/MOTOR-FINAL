@@ -909,7 +909,11 @@ function onLoggedIn(){
   document.getElementById('userChip').textContent = currentUser.name + ' · ' + currentUser.role;
   document.getElementById('footUser').textContent = currentUser.name + ' (' + currentUser.role + ')';
   applyRolePermissions();
+    const h = (location.hash||'').slice(1);
+  if(NAV.some(n=>n.id===h && (!n.adminOnly || currentUser.role==='admin'))) currentView = h;
+  history.replaceState({view:currentView}, '', '#'+currentView);
   buildNav();
+  showView(currentView);
   refreshAll();
   startPolling();
 }
@@ -983,6 +987,7 @@ function buildNav(){
     nav.appendChild(btn);
   });
 }
+let navFromHistory = false;
 function showView(id){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('view-'+id).classList.add('active');
@@ -990,6 +995,7 @@ function showView(id){
   const titles = {dashboard:'Dashboard', motors:'Motors', sparemotors:'Spare Motors', underrepair:'Under Repair', spares:'Parts inventory', events:'Breakdowns & repairs', swaps:'Spare swap history', reports:'Reports', users:'Staff accounts'};
   document.getElementById('viewTitle').textContent = titles[id];
   renderAll();
+    if(!navFromHistory && location.hash !== '#'+id) history.pushState({view:id}, '', '#'+id);
 }
 document.getElementById('menuBtn').addEventListener('click', ()=> document.getElementById('sidebar').classList.toggle('open'));
 
@@ -2439,7 +2445,24 @@ tickClock(); setInterval(tickClock, 30000);
 
 /* ============================= BOOT ============================= */
 initAuth();
-
+window.addEventListener('popstate', ()=>{
+  if(!currentUser) return;
+  const sb = document.getElementById('sidebar');
+  const overlayOpen = document.getElementById('motorDrawer').classList.contains('open')
+    || document.getElementById('eventDrawer').classList.contains('open')
+    || document.getElementById('modalOverlay').classList.contains('open')
+    || sb.classList.contains('open');
+  if(overlayOpen){
+    // Back closes the popup/drawer/menu instead of leaving the page
+    closeMotorDrawer(); closeEventDrawer(); closeModal(); sb.classList.remove('open');
+    history.pushState({view:currentView}, '', '#'+currentView);
+    return;
+  }
+  const id = (location.hash||'').slice(1) || 'dashboard';
+  const allowed = NAV.some(n=>n.id===id && (!n.adminOnly || currentUser.role==='admin'));
+  if(!allowed) return;
+  navFromHistory = true; currentView = id; showView(id); navFromHistory = false;
+});
 })();
 
 </script>
