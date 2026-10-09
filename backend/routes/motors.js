@@ -5,7 +5,6 @@ const { logAudit, diffSummary } = require('../services/audit');
 
 const router = express.Router();
 
-const pool = require('../db/pool'); // use whatever your file exports
 
 const asArr = (v) => {
   if (!v) return [];
