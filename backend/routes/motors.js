@@ -208,7 +208,29 @@ router.put(
         });
       }
 
-   if (req.user.role === 'technician') {
+   
+if (req.user.role === 'technician') {
+  if (!(await techCanEdit(motorId))) {
+    return res.status(403).json({
+      error: 'Technicians can only edit motors that are broken down or under repair.'
+    });
+  }
+
+  // Technicians may return a repaired motor to standby.
+  // Other status changes remain restricted.
+  if (b.manualStatus !== oldRow.manual_status) {
+    const allowedRepairToStandby =
+      oldRow.manual_status === 'repair' &&
+      b.manualStatus === 'standby';
+
+    if (!allowedRepairToStandby) {
+      return res.status(403).json({
+        error: 'Technicians may change a repaired motor to standby only.'
+      });
+    }
+  }
+}
+if (req.user.role === 'technician') {
     if (!(await techCanEdit(motorId))) return res.status(403).json({ error: 'Technicians can only edit motors that are broken down or under repair.' });
     if (b.manualStatus !== oldRow.manual_status) return res.status(403).json({ error: 'Status changes go through the breakdown workflow. Ask an admin.' });
   }

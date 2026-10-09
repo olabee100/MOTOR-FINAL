@@ -1666,14 +1666,22 @@ function openMotorModal(id){
   );
   document.getElementById('mClose').onclick = closeModal;
   document.getElementById('mCancel').onclick = closeModal;
-    if(currentUser.role!=='admin') document.getElementById('f-status').disabled = true;
-  document.getElementById('f-status').addEventListener('change', (e)=>{
-    document.getElementById('f-standbyCatWrap').style.display = e.target.value==='standby' ? 'block' : 'none';
-    if(e.target.value==='repair'){
-      const loc = document.getElementById('f-loctype');
-      if(loc.value!=='Internal workshop' && loc.value!=='External workshop') loc.value = 'Internal workshop';
+
+document.getElementById('f-status').addEventListener('change', (e) => {
+  document.getElementById('f-standbyCatWrap').style.display =
+    e.target.value === 'standby' ? 'block' : 'none';
+
+  if (e.target.value === 'repair') {
+    const loc = document.getElementById('f-loctype');
+
+    if (
+      loc.value !== 'Internal workshop' &&
+      loc.value !== 'External workshop'
+    ) {
+      loc.value = 'Internal workshop';
     }
-  });
+  }
+});
   if(m) document.getElementById('mDelete').onclick = async ()=>{ if(confirm('Delete '+m.tag+'? Any breakdown history for it will be deleted too. This cannot be undone.')){ await docDelete('motors', m.id); closeModal(); } };
   document.getElementById('mSave').onclick = async ()=>{
     if(!requireFields([['f-tag','Tag / asset ID'],['f-name','Name / description']])) return;
