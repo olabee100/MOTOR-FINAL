@@ -6,7 +6,7 @@ const { logAudit } = require('../services/audit');
 
 const router = express.Router();
 
-const REQUIRE_TEST_REPORT = true; // false = test report optional before resolving
+ // false = test report optional before resolving
 function rowToEvent(r) {
   return {
     id: r.id,
@@ -255,6 +255,9 @@ router.put(
       }
   if (req.user.role === 'technician' && row.stage === 'resolved') {
     return res.status(403).json({ error: 'Only an admin can edit a resolved breakdown record.' });
+  }
+    if (b.stage === 'resolved' && row.stage !== 'resolved') {
+    return res.status(409).json({ error: 'Use "Mark resolved". It requires a passed test report.' });
   }
 
       const next = {
@@ -890,12 +893,10 @@ router.post(
         });
       }
 
-  if (REQUIRE_TEST_REPORT) {
-    const rep = event.test_report ? JSON.parse(event.test_report) : null;
-    if (!rep || rep.result !== 'pass') {
-      return res.status(409).json({ error: 'Record a passing test report before returning this motor to service.' });
-    }
-  }
+    // Mandatory for every role: a PASSED test report must be on file before resolving.
+  const rep = event.test_report ? JSON.parse(event.test_report) : null;
+  if (!rep) return res.status(409).json({ error: 'A test report is required before this motor can be resolved.' });
+  if (rep.result !== 'pass') return res.status(409).json({ error: 'The latest test report is FAILED. Record a new test that passes before resolving.' });
       const now = new Date();
 
       const downtimeHours =

@@ -441,6 +441,8 @@ body.not-admin #ed-deleteBtn, body.not-admin #ed-reopenBtn, body.not-admin #mDel
         </div>
       </div>
 
+
+
       <!-- SPARES (parts) -->
       <div class="view" id="view-spares">
         <div class="page-head">
@@ -490,7 +492,17 @@ body.not-admin #ed-deleteBtn, body.not-admin #ed-reopenBtn, body.not-admin #mDel
           <tbody id="eventsTbody"></tbody>
         </table></div></div>
       </div>
-
+      <div class="view" id="view-swaps">
+        <div class="page-head">
+          <div><h2>Spare swap history</h2><p>Every motor taken from standby and installed in place of a broken-down motor.</p></div>
+          <button class="btn" id="exportSwapsBtn">⬇ Export CSV</button>
+        </div>
+        <div class="toolbar"><input type="search" id="swapSearch" placeholder="Search by either motor tag, name, department or who installed it…"></div>
+        <div class="panel"><div class="table-wrap"><table>
+          <thead><tr><th>Date installed</th><th>Spare motor installed</th><th>Installed in place of</th><th>Department</th><th>Installed by</th><th>Breakdown</th></tr></thead>
+          <tbody id="swapsTbody"></tbody>
+        </table></div></div>
+      </div>
       <!-- REPORTS -->
       <div class="view" id="view-reports">
         <div class="page-head">
@@ -579,6 +591,97 @@ body.not-admin #ed-deleteBtn, body.not-admin #ed-reopenBtn, body.not-admin #mDel
 <script>
 (function(){
 "use strict";
+
+function motorJobGuide(m){
+  const st = computeMotorStatus(m);
+  if(st!=='breakdown' && st!=='repair') return '';
+  const ev = state.events.filter(e=>e.motorId===m.id && isEventOpen(e)).sort((a,b)=>new Date(b.reportedAt)-new Date(a.reportedAt))[0];
+  if(!ev){
+    return '<div class="drawer-section"><h4>Current job</h4><div class="callout amber" style="margin:0;"><span>🔧</span><div>'+
+      '<b>Sent for repair without a breakdown record.</b><br>Location: '+escapeHtml(currentLocationFor(m))+'<br>Condition: '+escapeHtml(m.condition||'—')+
+      '<br>Only an admin can return this motor to service.</div></div></div>';
+  }
+  const rep = ev.testReport;
+  let next;
+  if(rep && rep.result==='pass') next = 'Test PASSED. Open the breakdown record and mark it resolved.';
+  else if(rep) next = 'The last test FAILED. Rework the motor, then record a new test. It can only be resolved after a PASSED test.';
+  else next = ({
+    reported: 'Diagnose the fault, then move the record to Diagnosing.',
+    diagnosing: 'Once the fault is confirmed, move to Awaiting parts or In repair. If the line must keep running, install a standby spare motor from the breakdown record.',
+    awaiting_parts: 'Get the parts, or install a standby spare motor from the breakdown record to keep the line running. Move to In repair when work starts.',
+    in_repair: 'Make sure the workshop (Internal or External) and location detail are filled in. When the repair is done, test the motor and save a test report. A PASSED report is required before it can be resolved.',
+  })[ev.stage] || '';
+  const workshop = [ev.repairLocationType, ev.repairLocation].filter(Boolean).join(' — ');
+  const notes = (ev.timeline||[]).slice(-3).reverse().map(t=>'<div class="tl-item"><div class="tl-dot"></div><div><div class="tl-time">'+fmtDateTime(t.at)+'</div><div>'+escapeHtml(t.text)+'</div></div></div>').join('');
+  return '<div class="drawer-section"><h4>Current job</h4>'+
+    '<div class="callout amber" style="margin:0 0 12px;"><span>➜</span><div><b>Next step:</b> '+escapeHtml(next)+'</div></div>'+
+    '<div class="kv">'+
+      '<div><span class="k">Issue reported</span><span class="v">'+escapeHtml(ev.description||'—')+'</span></div>'+
+      '<div><span class="k">Urgency / stage</span><span class="v">'+escapeHtml(ev.urgency)+' · '+STAGE_LABELS[ev.stage]+'</span></div>'+
+      '<div><span class="k">Reported</span><span class="v">'+fmtDateTime(ev.reportedAt)+' by '+escapeHtml(ev.reportedBy||'—')+'</span></div>'+
+      '<div><span class="k">Workshop / location</span><span class="v">'+escapeHtml(workshop||'Not recorded yet')+'</span></div>'+
+      '<div><span class="k">Condition notes</span><span class="v">'+escapeHtml(ev.condition||m.condition||'—')+'</span></div>'+
+      '<div><span class="k">Test report</span><span class="v">'+(rep?(rep.result==='pass'?'PASSED':'FAILED')+' · '+fmtDate(rep.testedAt):'None yet')+'</span></div>'+
+    '</div>'+
+    (notes?'<div style="margin-top:12px;"><div style="font-size:11.5px; color:var(--text-faint); margin-bottom:4px;">Latest notes</div><div class="timeline">'+notes+'</div></div>':'')+
+    '<button class="btn btn-sm" style="margin-top:12px;" data-job-event="'+ev.id+'">Open breakdown record →</button></div>';
+}
+/* ===== SPARE SWAP HISTORY ===== */
+let swapSearchText = '', lastSwapRows = [];
+function getSwapRows(){
+  const rows = [];
+  state.events.forEach(ev=>{
+    const broken = motorById(ev.motorId);
+    (ev.motorSwaps||[]).forEach(s=>{
+      const spare = motorById(s.motorId);
+      rows.push({
+        at:s.at, by:s.by||'', eventId:ev.id, stage:ev.stage,
+        spareId:s.motorId, spareTag:s.tag, spareName:spare?spare.name:'', spareKw:spare?spare.kw:'',
+        brokenId:ev.motorId, brokenTag:broken?broken.tag:'(deleted)', brokenName:broken?broken.name:'', department:broken?broken.department:'',
+      });
+    });
+  });
+  return rows.sort((a,b)=>new Date(b.at)-new Date(a.at));
+}
+function motorSwapHistoryHtml(m){
+  const rows = getSwapRows().filter(r=>String(r.spareId)===String(m.id) || String(r.brokenId)===String(m.id));
+  if(!rows.length) return '';
+  return '<div class="drawer-section"><h4>Spare swap history</h4><div class="timeline">'+rows.map(r=>{
+    const asSpare = String(r.spareId)===String(m.id);
+    return '<div class="tl-item"><div class="tl-dot"></div><div><div class="tl-time">'+fmtDate(r.at)+' · '+escapeHtml(r.by)+'</div><div>'+
+      (asSpare ? 'Used as a spare, installed in place of <b>'+escapeHtml(r.brokenTag)+'</b>' : '<b>'+escapeHtml(r.spareTag)+'</b> (spare) was installed in its place')+'</div></div></div>';
+  }).join('')+'</div></div>';
+}
+function renderSwaps(){
+  const tb = document.getElementById('swapsTbody');
+  if(!tb) return;
+  let rows = getSwapRows();
+  if(swapSearchText){
+    const q = swapSearchText.toLowerCase();
+    rows = rows.filter(r=>(r.spareTag+' '+r.spareName+' '+r.brokenTag+' '+r.brokenName+' '+r.by+' '+r.department).toLowerCase().includes(q));
+  }
+  lastSwapRows = rows;
+  tb.innerHTML = rows.length ? rows.map(r=>
+    '<tr data-event="'+r.eventId+'">'+
+    '<td style="font-size:12px;">'+fmtDateTime(r.at)+'</td>'+
+    '<td><span class="mono" data-motor="'+r.spareId+'" style="color:var(--wheat); font-weight:600;">'+escapeHtml(r.spareTag)+'</span><div class="cell-sub">'+escapeHtml(r.spareName)+(r.spareKw?' · '+r.spareKw+' kW':'')+'</div></td>'+
+    '<td><span class="mono" data-motor="'+r.brokenId+'" style="color:var(--wheat); font-weight:600;">'+escapeHtml(r.brokenTag)+'</span><div class="cell-sub">'+escapeHtml(r.brokenName)+'</div></td>'+
+    '<td>'+escapeHtml(r.department)+'</td>'+
+    '<td style="font-size:12.5px;">'+escapeHtml(r.by)+'</td>'+
+    '<td><span class="badge '+(r.stage==='resolved'?'running':'repair')+'">'+STAGE_LABELS[r.stage]+'</span></td></tr>'
+  ).join('') : '<tr><td colspan="6"><div class="empty-note">No spare motor has been swapped in yet.</div></td></tr>';
+  tb.querySelectorAll('tr[data-event]').forEach(tr=> tr.onclick = (e)=>{
+    const mt = e.target.closest('[data-motor]');
+    if(mt){ openMotorDrawer(mt.dataset.motor); return; }
+    openEventDrawer(tr.dataset.event);
+  });
+}
+document.getElementById('swapSearch').addEventListener('input', e=>{ swapSearchText = e.target.value; renderSwaps(); });
+document.getElementById('exportSwapsBtn').addEventListener('click', ()=>{
+  exportCsv('spare-swap-history-'+new Date().toISOString().slice(0,10)+'.csv',
+    ['Date installed','Spare motor tag','Spare motor name','Spare kW','Installed in place of (tag)','Broken motor name','Department','Installed by','Breakdown stage'],
+    lastSwapRows.map(r=>[r.at,r.spareTag,r.spareName,r.spareKw,r.brokenTag,r.brokenName,r.department,r.by,r.stage]));
+});
 function testReportSummary(r){
   const row = (k,v)=> (v!=='' && v!=null) ? '<div><span class="k">'+k+'</span><span class="v">'+escapeHtml(String(v))+'</span></div>' : '';
   return '<div style="margin-bottom:8px;"><span class="badge '+(r.result==='pass'?'running':'breakdown')+'">'+(r.result==='pass'?'PASSED':'FAILED')+'</span> '+
@@ -784,6 +887,7 @@ const NAV = [
   {id:'sparemotors', label:'Spare Motors', icon:'swap'},
   {id:'underrepair', label:'Under Repair', icon:'wrench'},
   {id:'events', label:'Breakdowns', icon:'bolt'},
+  {id:'swaps', label:'Swap History', icon:'swap'},
   {id:'reports', label:'Reports', icon:'chart'},
   {id:'users', label:'Staff accounts', icon:'users', adminOnly:true},
 ];
@@ -817,7 +921,7 @@ function showView(id){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('view-'+id).classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.view===id));
-  const titles = {dashboard:'Dashboard', motors:'Motors', sparemotors:'Spare Motors', underrepair:'Under Repair', spares:'Parts inventory', events:'Breakdowns & repairs', reports:'Reports', users:'Staff accounts'};
+  const titles = {dashboard:'Dashboard', motors:'Motors', sparemotors:'Spare Motors', underrepair:'Under Repair', spares:'Parts inventory', events:'Breakdowns & repairs', swaps:'Spare swap history', reports:'Reports', users:'Staff accounts'};
   document.getElementById('viewTitle').textContent = titles[id];
   renderAll();
 }
@@ -1412,6 +1516,7 @@ function renderAll(){
   renderMotors();
   renderSpareMotors();
   renderUnderRepair();
+  renderSwaps();
   renderSpares();
   renderEvents();
   renderReports();
@@ -2007,6 +2112,7 @@ function openMotorDrawer(id){
       '<span class="badge '+st+'">'+st+'</span>'+(st==='standby'?' <span class="badge '+(m.standbyCategory==='repaired'?'repair':'running')+'">'+(m.standbyCategory==='repaired'?'repaired — workshop':'new — in store')+'</span>':'')+'</div>'+
     '<div class="drawer-body">'+
       '<div class="drawer-section"><h4>Status</h4><div class="kv">'+
+              motorJobGuide(m)+
         '<div><span class="k">Current location</span><span class="v">'+escapeHtml(currentLocationFor(m))+'</span></div>'+
         '<div><span class="k">Condition</span><span class="v">'+escapeHtml(currentConditionFor(m))+'</span></div>'+
         '<div><span class="k">Voltage / RPM</span><span class="v">'+m.voltage+'V · '+m.rpm+' rpm</span></div>'+
@@ -2022,6 +2128,7 @@ function openMotorDrawer(id){
         (history.length ? history.map(ev=>'<div class="tl-item" data-hist-event="'+ev.id+'" style="cursor:pointer;"><div class="tl-dot"></div><div><div class="tl-time">'+fmtDate(ev.reportedAt)+' · '+STAGE_LABELS[ev.stage]+'</div><div>'+escapeHtml(ev.description||'No description')+'</div></div></div>').join('')
         : '<div class="empty-note" style="padding:10px 0;">No breakdowns logged for this motor.</div>')+
       '</div></div>'+
+         motorSwapHistoryHtml(m)+
       '<div class="drawer-section"><h4>Change history — who, what, when</h4><div class="timeline" id="mdAuditLog"><div class="empty-note" style="padding:10px 0;">Loading…</div></div></div>'+
       '</div>'+
       '<div style="padding:0 20px 20px;"><button class="btn" style="width:100%;" id="mdEdit">Edit motor details</button></div>';
@@ -2030,6 +2137,7 @@ function openMotorDrawer(id){
   document.getElementById('motorDrawerOverlay').classList.add('open');
   document.getElementById('mdClose').onclick = closeMotorDrawer;
   document.getElementById('mdEdit').onclick = ()=>{ closeMotorDrawer(); openMotorModal(id); };
+    document.querySelectorAll('#motorDrawer [data-job-event]').forEach(b=> b.onclick=()=>{ closeMotorDrawer(); openEventDrawer(b.dataset.jobEvent); });
     if(!canEditMotor(m)) document.getElementById('mdEdit').style.display = 'none';
   document.querySelectorAll('#motorDrawer [data-hist-event]').forEach(el=> el.onclick = ()=>{ closeMotorDrawer(); openEventDrawer(el.dataset.histEvent); });
 
@@ -2103,7 +2211,7 @@ function renderEventDrawerBody(ev, m, canEdit){
         (standbyOptions.length ? '<div class="searchable-wrap" style="display:flex; gap:8px; margin-top:8px;"><div class="searchable-wrap" style="flex:1;"><input type="text" id="ed-swap-search" placeholder="Search standby motor by tag or name…" autocomplete="off"><input type="hidden" id="ed-swapSel"><div class="searchable-list" id="ed-swap-list"></div></div><button class="btn btn-sm" id="ed-swapBtn">Install</button></div>' : '<div class="empty-note" style="padding:6px 0;">No standby spare motors available right now.</div>')+
         '</div>'+
                 '<div class="drawer-section"><h4>Test report</h4>'+testReportHtml(ev)+'</div>'+
-        '<div class="drawer-section"><button class="btn" style="width:100%; border-color:var(--moss); color:var(--moss);" id="ed-resolveBtn">Mark resolved — motor is back in service</button></div>'
+                '<div class="drawer-section"><button class="btn" style="width:100%; border-color:var(--moss); color:var(--moss);" id="ed-resolveBtn" '+((ev.testReport&&ev.testReport.result==='pass')?'':'disabled')+'>Mark resolved — motor is back in service</button>'+((ev.testReport&&ev.testReport.result==='pass')?'':'<div style="font-size:11.5px; color:var(--amber); margin-top:6px;">A PASSED test report is required before this can be resolved'+(ev.testReport?' (latest test: FAILED)':'')+'.</div>')+'</div>'
       ) : (
         '<div class="drawer-section"><h4>Resolved</h4><div class="kv">'+
         '<div><span class="k">Resolved</span><span class="v">'+fmtDateTime(ev.resolvedAt)+'</span></div>'+

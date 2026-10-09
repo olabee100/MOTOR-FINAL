@@ -39,25 +39,25 @@ async function seed() {
   // tag, name, department, kW, voltage, rpm, status,
   // locationType, placementDetail, standbyCategory, condition
   const motors = [
-    ['RM-01', 'Roller Mill 1 Main Drive', 'Milling', 55, 415, 1450, 'running', 'Mill floor', 'Bay 1', 'new', 'Good'],
+    ['RM-01', 'Roller Mill 1 Main Drive', 'Milling', 55, 415, 1450, 'running', 'Mill B', 'Bay 1', 'new', 'Good'],
 
-    ['RM-02', 'Roller Mill 2 Main Drive', 'Milling', 55, 415, 1450, 'running', 'Mill floor', 'Bay 2', 'new', 'Winding fault suspected'],
+    ['RM-02', 'Roller Mill 2 Main Drive', 'Milling', 55, 415, 1450, 'running', 'Mill B', 'Bay 2', 'new', 'Winding fault suspected'],
 
-    ['SIFT-01', 'Plansifter Drive Motor', 'Sifting', 11, 415, 960, 'running', 'Mill floor', 'Sifter line', 'new', 'Good'],
+    ['SIFT-01', 'Plansifter Drive Motor', 'Sifting', 11, 415, 960, 'running', 'Mill B', 'Sifter line', 'new', 'Good'],
 
-    ['PUR-01', 'Purifier Motor', 'Sifting', 7.5, 415, 1440, 'running', 'Mill floor', 'Purifier line', 'new', 'Good'],
+    ['PUR-01', 'Purifier Motor', 'Sifting', 7.5, 415, 1440, 'running', 'Mill B', 'Purifier line', 'new', 'Good'],
 
-    ['CLEAN-01', 'Wheat Cleaner Motor', 'Cleaning', 15, 415, 1450, 'running', 'Mill floor', 'Cleaning section', 'new', 'Good'],
+    ['CLEAN-01', 'Wheat Cleaner Motor', 'Cleaning', 15, 415, 1450, 'running', 'Mill B', 'Cleaning section', 'new', 'Good'],
 
-    ['CLEAN-02', 'Destoner Motor', 'Cleaning', 7.5, 415, 1440, 'running', 'Mill floor', 'Cleaning section', 'new', 'Good'],
+    ['CLEAN-02', 'Destoner Motor', 'Cleaning', 7.5, 415, 1440, 'running', 'Mill B', 'Cleaning section', 'new', 'Good'],
 
-    ['CONV-01', 'Bucket Elevator Motor — Intake', 'Conveying', 22, 415, 1450, 'running', 'Mill floor', 'Intake shaft', 'new', 'Good'],
+    ['CONV-01', 'Bucket Elevator Motor — Intake', 'Conveying', 22, 415, 1450, 'running', 'Mill B', 'Intake shaft', 'new', 'Good'],
 
     ['CONV-02', 'Screw Conveyor Motor', 'Conveying', 5.5, 415, 1440, 'standby', 'Store', 'Rack 3 — ready unit', 'repaired', 'Repaired after burnout — tested, ready to install'],
 
-    ['PACK-01', 'Bagging Scale Motor', 'Packing', 3.7, 415, 1440, 'running', 'Mill floor', 'Packing hall', 'new', 'Good'],
+    ['PACK-01', 'Bagging Scale Motor', 'Packing', 3.7, 415, 1440, 'running', 'Mill B', 'Packing hall', 'new', 'Good'],
 
-    ['BLOW-01', 'Pneumatic Conveying Blower', 'Milling', 37, 415, 2900, 'running', 'Mill floor', 'Blower room', 'new', 'Slight vibration, monitor'],
+    ['BLOW-01', 'Pneumatic Conveying Blower', 'Milling', 37, 415, 2900, 'running', 'Mill B', 'Blower room', 'new', 'Slight vibration, monitor'],
 
     ['SIFT-02', 'Plansifter 2 Drive Motor', 'Sifting', 11, 415, 960, 'standby', 'Internal workshop', 'Bay 1 — spare, tested', 'repaired', 'Rewound after fault — ready to install'],
 
