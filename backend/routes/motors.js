@@ -56,7 +56,10 @@ function rowToMotor(r) {
     standbyCategory: r.standby_category || 'new',
     condition: r.condition_notes,
 
-    testReport: r.test_report ?? null,
+    testReport:
+  typeof r.test_report === 'string'
+    ? JSON.parse(r.test_report)
+    : r.test_report || null,
 
     createdAt: r.created_at,
     updatedAt: r.updated_at
